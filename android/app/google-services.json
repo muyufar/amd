@@ -1,0 +1,46 @@
+{
+  "project_info": {
+    "project_number": "803676518783",
+    "project_id": "andidigital-6ad25",
+    "storage_bucket": "andidigital-6ad25.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:803676518783:android:4c3d9e638e7e8bdc14024a",
+        "android_client_info": {
+          "package_name": "com.andi.digital.andi_digital"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "803676518783-bd7sh8kbhpphfngk2cgcbk41i2jfirmk.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyActGSOKrvQBkH5SWK-pufUPWU-LVGaKw0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "803676518783-bd7sh8kbhpphfngk2cgcbk41i2jfirmk.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "803676518783-9s9qa57qulggqt6hbf4vm4bdhlanblle.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.andi.digital.andiDigital"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
