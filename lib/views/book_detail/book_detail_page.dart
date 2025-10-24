@@ -74,6 +74,12 @@ class BookDetailPage extends StatelessWidget {
         // Debug: Print data untuk troubleshooting
         print('🔍 [BOOK DETAIL] Full data: $data');
         print('🔍 [BOOK DETAIL] Status ebook: ${data['status_ebook']}');
+        print(
+            '🔍 [BOOK DETAIL] file_ebook_preview in UI: ${data['file_ebook_preview']}');
+        print(
+            '🔍 [BOOK DETAIL] file_ebook_preview type in UI: ${data['file_ebook_preview'].runtimeType}');
+        print(
+            '🔍 [BOOK DETAIL] file_ebook_preview isEmpty in UI: ${data['file_ebook_preview']?.toString().isEmpty}');
 
         final hargaOriginal = data['harga']?['original'] ?? 0;
         final rincian = data['diskon']?['rincian'] ?? {};
@@ -473,6 +479,13 @@ class BookDetailPage extends StatelessWidget {
 
     // Debug: Print status untuk troubleshooting
     print('🔍 [BOOK DETAIL] Status ebook: $statusEbook');
+    print('🔍 [BOOK DETAIL] Full data keys: ${data.keys.toList()}');
+    print(
+        '🔍 [BOOK DETAIL] file_ebook_preview exists: ${data.containsKey('file_ebook_preview')}');
+    print(
+        '🔍 [BOOK DETAIL] file_ebook_preview value: ${data['file_ebook_preview']}');
+    print(
+        '🔍 [BOOK DETAIL] file_ebook_preview type: ${data['file_ebook_preview'].runtimeType}');
 
     // Jika status BUKAN "beli sekarang", berarti buku sudah dibeli
     if (statusEbook != 'beli sekarang' && statusEbook.isNotEmpty) {
@@ -548,7 +561,8 @@ class BookDetailPage extends StatelessWidget {
                   onTap: () {
                     final fileEbook = data['file_ebook_pdf']?.toString() ?? '';
                     if (fileEbook.isNotEmpty) {
-                      Get.to(() => _PDFViewerPage(url: fileEbook));
+                      Get.to(() =>
+                          _PDFViewerPage(url: fileEbook, isPreview: false));
                     } else {
                       Get.defaultDialog(
                         title: 'Info',
@@ -582,6 +596,78 @@ class BookDetailPage extends StatelessWidget {
                   ),
                 ),
               ),
+            ),
+          ),
+
+          // Divider
+          Container(
+            width: 1,
+            height: 40,
+            color: Colors.grey[300],
+          ),
+
+          // Tombol Preview
+          Container(
+            width: 60,
+            height: 60,
+            decoration: BoxDecoration(
+              color: Colors.teal,
+            ),
+            child: IconButton(
+              icon: const Icon(
+                Icons.visibility,
+                color: Colors.white,
+                size: 24,
+              ),
+              onPressed: () {
+                print('🔍 [PREVIEW BUTTON] Button pressed');
+                print('🔍 [PREVIEW BUTTON] Data keys: ${data.keys.toList()}');
+                print(
+                    '🔍 [PREVIEW BUTTON] file_ebook_preview raw: ${data['file_ebook_preview']}');
+                print(
+                    '🔍 [PREVIEW BUTTON] file_ebook_preview type: ${data['file_ebook_preview'].runtimeType}');
+
+                // Coba akses dari BookModel terlebih dahulu
+                final bookModel = controller.bookModel.value;
+                String? fileEbookPreview;
+
+                if (bookModel != null && bookModel.fileEbookPreview != null) {
+                  fileEbookPreview = bookModel.fileEbookPreview;
+                  print(
+                      '🔍 [PREVIEW BUTTON] Using BookModel fileEbookPreview: $fileEbookPreview');
+                } else {
+                  // Fallback ke data raw
+                  fileEbookPreview =
+                      data['file_ebook_preview']?.toString() ?? '';
+                  print(
+                      '🔍 [PREVIEW BUTTON] Using raw data fileEbookPreview: $fileEbookPreview');
+                }
+
+                print(
+                    '🔍 [PREVIEW BUTTON] fileEbookPreview final: $fileEbookPreview');
+                print(
+                    '🔍 [PREVIEW BUTTON] fileEbookPreview length: ${fileEbookPreview?.length ?? 0}');
+                print(
+                    '🔍 [PREVIEW BUTTON] fileEbookPreview isEmpty: ${fileEbookPreview?.isEmpty ?? true}');
+
+                if (fileEbookPreview != null && fileEbookPreview.isNotEmpty) {
+                  print(
+                      '🔍 [PREVIEW BUTTON] Opening preview: $fileEbookPreview');
+                  // Navigate to PDF viewer with preview URL
+                  Get.to(() =>
+                      _PDFViewerPage(url: fileEbookPreview!, isPreview: true));
+                } else {
+                  print(
+                      '🔍 [PREVIEW BUTTON] Preview not available, showing dialog');
+                  Get.defaultDialog(
+                    title: 'Infos',
+                    middleText: 'Preview buku belum tersedia untuk buku inih',
+                    textConfirm: 'OK',
+                    confirmTextColor: Colors.white,
+                    onConfirm: () => Get.back(),
+                  );
+                }
+              },
             ),
           ),
 
@@ -782,14 +868,21 @@ class BookDetailPage extends StatelessWidget {
                 size: 24,
               ),
               onPressed: () {
-                Get.defaultDialog(
-                  title: 'Info',
-                  middleText:
-                      'Buku ini Tidak tersedia previewnya, Langsung beli saja ya...!',
-                  textConfirm: 'OK',
-                  confirmTextColor: Colors.white,
-                  onConfirm: () => Get.back(),
-                );
+                final fileEbookPreview =
+                    data['file_ebook_preview']?.toString() ?? '';
+                if (fileEbookPreview.isNotEmpty) {
+                  // Navigate to PDF viewer with preview URL
+                  Get.to(() =>
+                      _PDFViewerPage(url: fileEbookPreview, isPreview: true));
+                } else {
+                  Get.defaultDialog(
+                    title: 'Infos',
+                    middleText: 'Preview buku belum tersedia untuk buku ini',
+                    textConfirm: 'OK',
+                    confirmTextColor: Colors.white,
+                    onConfirm: () => Get.back(),
+                  );
+                }
               },
             ),
           ),
@@ -1052,14 +1145,56 @@ class _ReviewFormState extends State<_ReviewForm> {
 // Tambahkan widget _PDFViewerPage di bawah file ini
 class _PDFViewerPage extends StatelessWidget {
   final String url;
-  const _PDFViewerPage({required this.url});
+  final bool isPreview;
+  const _PDFViewerPage({required this.url, this.isPreview = false});
 
   @override
   Widget build(BuildContext context) {
     final pdfUrl = url.startsWith('http') ? url : 'http://$url';
     return Scaffold(
-      appBar: AppBar(title: const Text('Baca Preview')),
-      body: SfPdfViewer.network(pdfUrl),
+      appBar: AppBar(
+        title: Text(isPreview ? 'Preview Buku' : 'Baca Buku'),
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
+        elevation: 0,
+        actions: [
+          if (isPreview)
+            Container(
+              margin: const EdgeInsets.only(right: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.orange,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: const Text(
+                'PREVIEW',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+        ],
+      ),
+      body: SfPdfViewer.network(
+        pdfUrl,
+        enableDoubleTapZooming: true,
+        enableTextSelection: true,
+        onDocumentLoadFailed: (PdfDocumentLoadFailedDetails details) {
+          print('PDF Load Error: ${details.error}');
+          Get.snackbar(
+            'Error',
+            'Gagal memuat ${isPreview ? 'preview' : 'buku'}',
+            backgroundColor: Colors.red,
+            colorText: Colors.white,
+          );
+        },
+        onDocumentLoaded: (PdfDocumentLoadedDetails details) {
+          print(
+              'PDF Loaded successfully: ${details.document.pages.count} pages');
+        },
+      ),
     );
   }
 }

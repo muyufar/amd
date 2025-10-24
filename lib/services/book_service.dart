@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import '../config/app_config.dart';
 import 'package:get_storage/get_storage.dart';
 import '../controllers/auth_controller.dart';
+import '../models/book_model.dart';
 
 class BookService {
   final box = GetStorage();
@@ -101,7 +102,26 @@ class BookService {
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         if (data['status'] == true && data['data'] != null) {
-          return data['data'] as Map<String, dynamic>;
+          final result = data['data'] as Map<String, dynamic>;
+          // Debug: Print preview data
+          print(
+              '🔍 [BOOK SERVICE] file_ebook_preview in API response: ${result['file_ebook_preview']}');
+          print(
+              '🔍 [BOOK SERVICE] file_ebook_preview type: ${result['file_ebook_preview'].runtimeType}');
+          print(
+              '🔍 [BOOK SERVICE] file_ebook_preview isEmpty: ${result['file_ebook_preview']?.toString().isEmpty}');
+
+          // Parse menggunakan BookModel untuk validasi
+          try {
+            final bookModel = BookModel.fromJson(result);
+            print('🔍 [BOOK SERVICE] BookModel parsed successfully');
+            print(
+                '🔍 [BOOK SERVICE] BookModel fileEbookPreview: ${bookModel.fileEbookPreview}');
+            return result; // Tetap return raw data untuk kompatibilitas
+          } catch (e) {
+            print('🔴 [BOOK SERVICE] Error parsing BookModel: $e');
+            return result; // Tetap return raw data jika parsing gagal
+          }
         } else {
           throw Exception('Data tidak ditemukan');
         }

@@ -72,7 +72,7 @@ class _MyAppState extends State<MyApp> {
   Widget build(BuildContext context) {
     return GetMaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'Ebook Reader',
+      title: 'AMD',
       initialRoute: '/home',
       getPages: AppPages.routes,
       theme: ThemeData(

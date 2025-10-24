@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../config/app_config.dart';
 import '../controllers/auth_controller.dart';
-import 'package:get/get.dart';
 
 class ApiService {
   static final ApiService _instance = ApiService._internal();

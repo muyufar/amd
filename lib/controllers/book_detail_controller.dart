@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../services/book_service.dart';
 import '../services/wishlist_service.dart';
+import '../models/book_model.dart';
 
 class BookDetailController extends GetxController {
   final BookService _bookService = BookService();
@@ -9,6 +10,7 @@ class BookDetailController extends GetxController {
   var isLoading = false.obs;
   var error = ''.obs;
   var detail = Rxn<Map<String, dynamic>>();
+  var bookModel = Rxn<BookModel>();
   var loadingWishlist = false.obs;
   var isWishlisted = false.obs;
   var loadingReview = false.obs;
@@ -55,7 +57,23 @@ class BookDetailController extends GetxController {
     error.value = '';
     try {
       final data = await _bookService.fetchDetailBuku(slug);
+      print('🔍 [BOOK DETAIL CONTROLLER] Data received from service: $data');
+      print(
+          '🔍 [BOOK DETAIL CONTROLLER] file_ebook_preview in controller: ${data?['file_ebook_preview']}');
       detail.value = data;
+
+      // Parse dan simpan BookModel
+      if (data != null) {
+        try {
+          final model = BookModel.fromJson(data);
+          bookModel.value = model;
+          print('🔍 [BOOK DETAIL CONTROLLER] BookModel created successfully');
+          print(
+              '🔍 [BOOK DETAIL CONTROLLER] BookModel fileEbookPreview: ${model.fileEbookPreview}');
+        } catch (e) {
+          print('🔴 [BOOK DETAIL CONTROLLER] Error creating BookModel: $e');
+        }
+      }
 
       // Fetch reviews separately using the new API
       if (data != null) {

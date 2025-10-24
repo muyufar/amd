@@ -111,6 +111,10 @@ class CheckoutPage extends StatelessWidget {
                       -(checkoutData['subtotal']['diskon']['barang'] ?? 0)),
                 _buildSummaryRow(
                     'Subtotal', checkoutData['subtotal']?['subtotal'] ?? 0),
+                if (checkoutData['subtotal']?['biaya_layanan'] != null &&
+                    checkoutData['subtotal']['biaya_layanan'] > 0)
+                  _buildSummaryRow('Biaya Layanan',
+                      checkoutData['subtotal']['biaya_layanan'] ?? 0),
                 _buildSummaryRow('PPN', checkoutData['subtotal']?['ppn'] ?? 0),
                 const Divider(),
                 _buildSummaryRow(
@@ -474,6 +478,10 @@ class CheckoutPage extends StatelessWidget {
                   ],
                   _buildSummaryRow(
                       'Subtotal', checkoutData.subtotal['subtotal'] ?? 0),
+                  if (checkoutData.subtotal['biaya_layanan'] != null &&
+                      checkoutData.subtotal['biaya_layanan'] > 0)
+                    _buildSummaryRow('Biaya Layanan',
+                        checkoutData.subtotal['biaya_layanan'] ?? 0),
                   _buildSummaryRow('PPN', checkoutData.subtotal['ppn'] ?? 0),
                   const Divider(),
                   _buildSummaryRow(
