@@ -13,7 +13,11 @@ import '../views/checkout/checkout_page.dart';
 import '../views/checkout/midtrans_page.dart';
 import '../views/auth/register_page.dart';
 import '../views/cart/cart_page.dart';
+import '../views/search/search_page.dart';
 import '../bindings/cart_binding.dart';
+import '../bindings/category_binding.dart';
+import '../bindings/publisher_binding.dart';
+import '../bindings/search_binding.dart';
 import 'app_routes.dart';
 
 class AppPages {
@@ -29,8 +33,14 @@ class AppPages {
     GetPage(name: AppRoutes.wishlist, page: () => const WishlistPage()),
     GetPage(name: AppRoutes.bookshelf, page: () => const BookshelfPage()),
     GetPage(name: AppRoutes.transaction, page: () => const TransactionPage()),
-    GetPage(name: AppRoutes.category, page: () => const CategoryPage()),
-    GetPage(name: AppRoutes.publisher, page: () => const PublisherPage()),
+    GetPage(
+        name: AppRoutes.category,
+        page: () => CategoryPage(),
+        binding: CategoryBinding()),
+    GetPage(
+        name: AppRoutes.publisher,
+        page: () => const PublisherPage(),
+        binding: PublisherBinding()),
     GetPage(name: AppRoutes.profile, page: () => const ProfilePage()),
     GetPage(
         name: AppRoutes.cart,
@@ -41,6 +51,11 @@ class AppPages {
     GetPage(
       name: '/register',
       page: () => const RegisterPage(),
+    ),
+    GetPage(
+      name: AppRoutes.search,
+      page: () => const SearchPage(),
+      binding: SearchBinding(),
     ),
   ];
 }

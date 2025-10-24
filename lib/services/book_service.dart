@@ -212,5 +212,37 @@ class BookService {
     }
   }
 
+  Future<Map<String, dynamic>> fetchReviewList(String idEbook) async {
+    final url =
+        Uri.parse('${AppConfig.baseUrlApp}/review/list?idEbook=$idEbook');
+
+    print('🔵 [BOOK SERVICE] Fetching review list from: $url');
+
+    try {
+      final response = await http.get(url, headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      });
+
+      print('🔵 [BOOK SERVICE] Response Status: ${response.statusCode}');
+      print('🔵 [BOOK SERVICE] Response Body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data['status'] == true && data['data'] != null) {
+          return data['data'] as Map<String, dynamic>;
+        } else {
+          return {'totals': '0.0', 'jumlah': 0, 'list': []};
+        }
+      } else {
+        throw Exception(
+            'Failed to fetch review list: ${response.statusCode} - ${response.body}');
+      }
+    } catch (e) {
+      print('🔴 [BOOK SERVICE] Error fetching review list: $e');
+      rethrow;
+    }
+  }
+
   // TODO: Implementasi fetch buku, detail buku, dsb
 }

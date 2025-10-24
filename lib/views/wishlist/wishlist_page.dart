@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../controllers/wishlist_controller.dart';
-import '../book_detail/book_detail_page.dart';
 import '../../utils/theme_utils.dart';
+import '../../widgets/loading_animations.dart';
 
 class WishlistPage extends StatefulWidget {
   const WishlistPage({super.key});
@@ -38,7 +38,7 @@ class _WishlistPageState extends State<WishlistPage> {
       ),
       body: Obx(() {
         if (controller.isLoading.value) {
-          return const Center(child: CircularProgressIndicator());
+          return LoadingAnimations.buildWishlistLoading();
         } else if (controller.error.value.isNotEmpty) {
           return Center(child: Text(controller.error.value));
         } else if (controller.wishlist.isEmpty) {

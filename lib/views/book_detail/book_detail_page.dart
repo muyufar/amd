@@ -5,10 +5,43 @@ import '../../controllers/cart_controller.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 import 'package:intl/intl.dart';
+import '../category/category_books_page.dart';
+import '../../widgets/loading_animations.dart';
 
 class BookDetailPage extends StatelessWidget {
   final BookDetailController controller = Get.put(BookDetailController());
   final CartController cartController = Get.put(CartController());
+
+  String _getButtonText(String? statusEbook) {
+    if (statusEbook == null) return 'Aksi';
+
+    final status = statusEbook.toLowerCase();
+    if (status == 'beli sekarang') {
+      return 'Beli';
+    }
+    return statusEbook;
+  }
+
+  String _formatCurrency(dynamic value) {
+    if (value == null) return 'Rp 0';
+
+    int intValue;
+    if (value is Map<String, dynamic>) {
+      // If it's a Map, try to get the 'original' value
+      intValue = value['original'] ?? 0;
+    } else if (value is int) {
+      intValue = value;
+    } else if (value is String) {
+      intValue = int.tryParse(value) ?? 0;
+    } else {
+      intValue = 0;
+    }
+
+    final formatter =
+        NumberFormat.currency(locale: 'id', symbol: 'Rp ', decimalDigits: 0);
+    return formatter.format(intValue);
+  }
+
   final reviewFormKey = GlobalKey();
   final scrollController = ScrollController();
 
@@ -30,13 +63,18 @@ class BookDetailPage extends StatelessWidget {
       appBar: AppBar(title: const Text('Detail Buku')),
       body: Obx(() {
         if (controller.isLoading.value) {
-          return const Center(child: CircularProgressIndicator());
+          return LoadingAnimations.buildBookDetailLoading();
         } else if (controller.error.value.isNotEmpty) {
           return Center(child: Text(controller.error.value));
         } else if (controller.detail.value == null) {
           return const Center(child: Text('Data tidak ditemukan'));
         }
         final data = controller.detail.value!;
+
+        // Debug: Print data untuk troubleshooting
+        print('🔍 [BOOK DETAIL] Full data: $data');
+        print('🔍 [BOOK DETAIL] Status ebook: ${data['status_ebook']}');
+
         final hargaOriginal = data['harga']?['original'] ?? 0;
         final rincian = data['diskon']?['rincian'] ?? {};
         final hargaAkhir =
@@ -147,15 +185,6 @@ class BookDetailPage extends StatelessWidget {
                                           data['id_ebook'] ??
                                           '';
                                       await controller.addOrToggleWishlist(id);
-                                      final wish =
-                                          controller.isWishlisted.value;
-                                      final msg = wish
-                                          ? 'Berhasil ditambahkan ke wishlist'
-                                          : 'Berhasil dihapus dari wishlist';
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(
-                                        SnackBar(content: Text(msg)),
-                                      );
                                     },
                               tooltip: 'Wishlist',
                             ),
@@ -212,9 +241,63 @@ class BookDetailPage extends StatelessWidget {
                     data['kategori']['label'] != null)
                   Padding(
                     padding: const EdgeInsets.only(top: 2, bottom: 8),
-                    child: Text(
-                      data['kategori']['label'],
-                      style: const TextStyle(color: Colors.grey, fontSize: 15),
+                    child: GestureDetector(
+                      onTap: () {
+                        // Navigate to category page with specific category
+                        final idKategori = data['kategori']['id'] ??
+                            data['kategori']['id_kategori'];
+                        final namaKategori = data['kategori']['label'];
+
+                        print(
+                            '🔍 [BOOK DETAIL] Navigating to category: $namaKategori (ID: $idKategori)');
+
+                        if (idKategori != null &&
+                            idKategori.toString().isNotEmpty) {
+                          // Navigate to specific category with books
+                          Get.to(() => CategoryBooksPage(
+                                categoryId: idKategori.toString(),
+                                categoryName: namaKategori,
+                              ));
+                        } else {
+                          // Fallback to general category page
+                          Get.toNamed('/category');
+                        }
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: Colors.blue.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(20),
+                          border:
+                              Border.all(color: Colors.blue.withOpacity(0.3)),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.category,
+                              size: 16,
+                              color: Colors.blue[700],
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              data['kategori']['label'],
+                              style: TextStyle(
+                                color: Colors.blue[700],
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            Icon(
+                              Icons.arrow_forward_ios,
+                              size: 12,
+                              color: Colors.blue[700],
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
                 // SPESIFIKASI
@@ -262,56 +345,103 @@ class BookDetailPage extends StatelessWidget {
                     style:
                         TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                 const SizedBox(height: 8),
-                if (data['reviews'] != null &&
-                    (data['reviews']['jumlah'] ?? 0) > 0 &&
-                    data['reviews']['list'] != null &&
-                    (data['reviews']['list'] as List).isNotEmpty)
-                  ...List.generate(data['reviews']['list'].length, (i) {
-                    final review = data['reviews']['list'][i];
-                    final rating =
-                        double.tryParse(review['value']?.toString() ?? '0') ??
-                            0.0;
-                    final name = (review['isNameHidden'] == '1')
-                        ? (review['nama_user']?.substring(0, 1) ?? '-') +
-                            '*****'
-                        : (review['nama_user'] ?? '-');
-                    final date = review['created_at']?.split(' ')?.first ?? '';
-                    return Card(
-                      margin: const EdgeInsets.only(bottom: 12),
+                Obx(() {
+                  if (controller.loadingReviews.value) {
+                    return const Center(
                       child: Padding(
-                        padding: const EdgeInsets.all(12),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Text(name,
-                                    style: const TextStyle(
-                                        fontWeight: FontWeight.bold)),
-                                const SizedBox(width: 8),
-                                ...List.generate(
-                                    5,
-                                    (j) => Icon(Icons.star,
-                                        size: 16,
-                                        color: j < rating
-                                            ? Colors.amber
-                                            : Colors.grey)),
-                                const SizedBox(width: 8),
-                                Text(date,
-                                    style: TextStyle(
-                                        color: Colors.grey[600], fontSize: 12)),
-                              ],
-                            ),
-                            const SizedBox(height: 4),
-                            Text(review['description'] ?? '-'),
-                          ],
-                        ),
+                        padding: EdgeInsets.all(20),
+                        child: CircularProgressIndicator(),
                       ),
                     );
-                  })
-                else
-                  const Text('Belum ada ulasan',
-                      style: TextStyle(color: Colors.grey)),
+                  }
+
+                  final reviewsData = controller.reviews.value;
+                  if (reviewsData != null &&
+                      (reviewsData['jumlah'] ?? 0) > 0 &&
+                      reviewsData['list'] != null &&
+                      (reviewsData['list'] as List).isNotEmpty) {
+                    return Column(
+                      children: [
+                        // Show total rating
+                        if (reviewsData['totals'] != null)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.star,
+                                    color: Colors.amber, size: 20),
+                                const SizedBox(width: 4),
+                                Text(
+                                  '${reviewsData['totals']}',
+                                  style: const TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  '(${reviewsData['jumlah']} ulasan)',
+                                  style: TextStyle(
+                                    color: Colors.grey[600],
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        // Show individual reviews
+                        ...List.generate(reviewsData['list'].length, (i) {
+                          final review = reviewsData['list'][i];
+                          final rating = double.tryParse(
+                                  review['value']?.toString() ?? '0') ??
+                              0.0;
+                          final name = (review['isNameHidden'] == '1')
+                              ? (review['nama_user']?.substring(0, 1) ?? '-') +
+                                  '*****'
+                              : (review['nama_user'] ?? '-');
+                          final date =
+                              review['created_at']?.split(' ')?.first ?? '';
+                          return Card(
+                            margin: const EdgeInsets.only(bottom: 12),
+                            child: Padding(
+                              padding: const EdgeInsets.all(12),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Text(name,
+                                          style: const TextStyle(
+                                              fontWeight: FontWeight.bold)),
+                                      const SizedBox(width: 8),
+                                      ...List.generate(
+                                          5,
+                                          (j) => Icon(Icons.star,
+                                              size: 16,
+                                              color: j < rating
+                                                  ? Colors.amber
+                                                  : Colors.grey)),
+                                      const SizedBox(width: 8),
+                                      Text(date,
+                                          style: TextStyle(
+                                              color: Colors.grey[600],
+                                              fontSize: 12)),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(review['description'] ?? '-'),
+                                ],
+                              ),
+                            ),
+                          );
+                        })
+                      ],
+                    );
+                  } else {
+                    return const Text('Belum ada ulasan',
+                        style: TextStyle(color: Colors.grey));
+                  }
+                }),
                 // FORM BERI RATING & REVIEW
                 if ((data['status_ebook'] ?? '').toString().toLowerCase() ==
                     'beri rating')
@@ -323,195 +453,420 @@ class BookDetailPage extends StatelessWidget {
                 const SizedBox(height: 80), // Untuk ruang tombol bawah
               ],
             ),
-            // Tombol chat dan aksi utama
+            // Tombol aksi utama dengan design baru - dinamis berdasarkan status_ebook
             Positioned(
               left: 16,
               right: 16,
               bottom: 16,
-              child: Row(
-                children: [
-                  if ((data['status_ebook'] ?? '').toString().toLowerCase() ==
-                      'beli sekarang') ...[
-                    Expanded(
-                      child: SizedBox(
-                        height: 48,
-                        child: ElevatedButton.icon(
-                          icon: const Icon(Icons.menu_book),
-                          label: const Text('Baca Preview'),
-                          onPressed: () {
-                            Get.defaultDialog(
-                              title: 'Info',
-                              middleText:
-                                  'Buku ini Tidak tersedia previewnya, Langsung beli saja ya...!',
-                              textConfirm: 'OK',
-                              confirmTextColor: Colors.white,
-                              onConfirm: () => Get.back(),
-                            );
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.grey[200],
-                            foregroundColor: Colors.blue,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    // Add to Cart Button
-                    SizedBox(
-                      height: 48,
-                      child: Obx(() => ElevatedButton.icon(
-                            icon: cartController.isAddingToCart.value
-                                ? const SizedBox(
-                                    width: 16,
-                                    height: 16,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      color: Colors.white,
-                                    ),
-                                  )
-                                : const Icon(Icons.shopping_cart),
-                            label: const Text('Keranjang'),
-                            onPressed: cartController.isAddingToCart.value
-                                ? null
-                                : () async {
-                                    final token = GetStorage().read('token');
-                                    if (token == null) {
-                                      Get.toNamed('/login');
-                                      return;
-                                    }
-
-                                    final idEbook = data['id_barang'] ??
-                                        data['id_ebook'] ??
-                                        '';
-                                    if (idEbook.isEmpty) {
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(
-                                        const SnackBar(
-                                            content: Text(
-                                                'ID buku tidak ditemukan')),
-                                      );
-                                      return;
-                                    }
-
-                                    final success =
-                                        await cartController.addToCart(
-                                      idEbook: idEbook,
-                                      ref: kodeAfiliasi,
-                                    );
-
-                                    if (success) {
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(
-                                        const SnackBar(
-                                          content: Text(
-                                              'Berhasil ditambahkan ke keranjang'),
-                                          backgroundColor: Colors.green,
-                                        ),
-                                      );
-                                    } else {
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(
-                                        SnackBar(
-                                          content:
-                                              Text(cartController.error.value),
-                                          backgroundColor: Colors.red,
-                                        ),
-                                      );
-                                    }
-                                  },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.orange,
-                              foregroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                            ),
-                          )),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: SizedBox(
-                        height: 48,
-                        child: ElevatedButton(
-                          onPressed: () {
-                            final token = GetStorage().read('token');
-                            if ((data['status_ebook'] ?? '')
-                                    .toString()
-                                    .toLowerCase() ==
-                                'beli sekarang') {
-                              if (token == null) {
-                                Get.toNamed('/login', parameters: {
-                                  'redirect': '/checkout',
-                                  'id': data['id_barang']
-                                });
-                              } else {
-                                Get.toNamed('/checkout', parameters: {
-                                  'id': data['id_barang'],
-                                  if (kodeAfiliasi != null)
-                                    'afiliasi': kodeAfiliasi,
-                                });
-                              }
-                            }
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.blue,
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                          ),
-                          child: Text(
-                            data['status_ebook'] ?? 'Aksi',
-                            style: const TextStyle(
-                                fontSize: 16, fontWeight: FontWeight.bold),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ] else ...[
-                    Expanded(
-                      child: SizedBox(
-                        height: 48,
-                        child: ElevatedButton(
-                          onPressed: () {
-                            final status = (data['status_ebook'] ?? '')
-                                .toString()
-                                .toLowerCase();
-                            if (status == 'beri rating') {
-                              if (reviewFormKey.currentContext != null) {
-                                Scrollable.ensureVisible(
-                                  reviewFormKey.currentContext!,
-                                  duration: const Duration(milliseconds: 500),
-                                  curve: Curves.easeInOut,
-                                );
-                              }
-                            }
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.blue,
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                          ),
-                          child: Text(
-                            data['status_ebook'] ?? 'Aksi',
-                            style: const TextStyle(
-                                fontSize: 16, fontWeight: FontWeight.bold),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ],
-              ),
+              child: _buildActionButtons(
+                  data, adaDiskon, hargaAkhir, hargaOriginal, kodeAfiliasi),
             ),
           ],
         );
       }),
+    );
+  }
+
+  Widget _buildActionButtons(Map<String, dynamic> data, bool adaDiskon,
+      dynamic hargaAkhir, dynamic hargaOriginal, String? kodeAfiliasi) {
+    final statusEbook = (data['status_ebook'] ?? '').toString().toLowerCase();
+
+    // Debug: Print status untuk troubleshooting
+    print('🔍 [BOOK DETAIL] Status ebook: $statusEbook');
+
+    // Jika status BUKAN "beli sekarang", berarti buku sudah dibeli
+    if (statusEbook != 'beli sekarang' && statusEbook.isNotEmpty) {
+      // Cek apakah user sudah memberikan rating
+      final hasUserReviewed = _checkIfUserHasReviewed(data);
+      print('🔍 [BOOK DETAIL] Has user reviewed: $hasUserReviewed');
+      return _buildOwnedBookButtons(data, hasUserReviewed);
+    }
+
+    // Jika status adalah "beli sekarang" atau default
+    return _buildPurchaseButtons(
+        data, adaDiskon, hargaAkhir, hargaOriginal, kodeAfiliasi);
+  }
+
+  bool _checkIfUserHasReviewed(Map<String, dynamic> data) {
+    final statusEbook = (data['status_ebook'] ?? '').toString().toLowerCase();
+
+    // Debug: Print status untuk troubleshooting
+    print('🔍 [BOOK DETAIL] Checking review status for: $statusEbook');
+
+    // Jika status masih "beri rating", berarti user belum memberikan rating
+    if (statusEbook == 'beri rating') {
+      print('🔍 [BOOK DETAIL] User belum rating (status: beri rating)');
+      return false;
+    }
+
+    // Jika status bukan "beri rating" dan bukan "beli sekarang", berarti user sudah memberikan rating
+    if (statusEbook != 'beli sekarang' && statusEbook.isNotEmpty) {
+      print('🔍 [BOOK DETAIL] User sudah rating (status: $statusEbook)');
+      return true;
+    }
+
+    // Default: belum rating
+    print('🔍 [BOOK DETAIL] Default: User belum rating');
+    return false;
+  }
+
+  Widget _buildOwnedBookButtons(
+      Map<String, dynamic> data, bool hasUserReviewed) {
+    return Container(
+      height: 60,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          // Tombol Baca Buku (selalu ada)
+          Expanded(
+            child: Container(
+              height: 60,
+              decoration: BoxDecoration(
+                color: Colors.blue,
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(12),
+                  bottomLeft: Radius.circular(12),
+                ),
+              ),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(12),
+                    bottomLeft: Radius.circular(12),
+                  ),
+                  onTap: () {
+                    final fileEbook = data['file_ebook_pdf']?.toString() ?? '';
+                    if (fileEbook.isNotEmpty) {
+                      Get.to(() => _PDFViewerPage(url: fileEbook));
+                    } else {
+                      Get.defaultDialog(
+                        title: 'Info',
+                        middleText: 'File ebook belum tersedia',
+                        textConfirm: 'OK',
+                        confirmTextColor: Colors.white,
+                        onConfirm: () => Get.back(),
+                      );
+                    }
+                  },
+                  child: Center(
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(
+                          Icons.menu_book,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 8),
+                        const Text(
+                          'Baca Buku',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+
+          // Divider
+          Container(
+            width: 1,
+            height: 40,
+            color: Colors.grey[300],
+          ),
+
+          // Tombol kedua berdasarkan status rating
+          Expanded(
+            child: Container(
+              height: 60,
+              decoration: BoxDecoration(
+                color: hasUserReviewed ? Colors.green : Colors.orange,
+                borderRadius: const BorderRadius.only(
+                  topRight: Radius.circular(12),
+                  bottomRight: Radius.circular(12),
+                ),
+              ),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  borderRadius: const BorderRadius.only(
+                    topRight: Radius.circular(12),
+                    bottomRight: Radius.circular(12),
+                  ),
+                  onTap: () {
+                    if (hasUserReviewed) {
+                      // Jika sudah rating, tampilkan bonus buku
+                      Get.defaultDialog(
+                        title: 'Bonus Buku',
+                        middleText: 'Bonus buku akan segera tersedia!',
+                        textConfirm: 'OK',
+                        confirmTextColor: Colors.white,
+                        onConfirm: () => Get.back(),
+                      );
+                    } else {
+                      // Jika belum rating, scroll ke form review
+                      scrollController.animateTo(
+                        scrollController.position.maxScrollExtent,
+                        duration: const Duration(milliseconds: 500),
+                        curve: Curves.easeInOut,
+                      );
+                    }
+                  },
+                  child: Center(
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          hasUserReviewed ? Icons.card_giftcard : Icons.star,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          hasUserReviewed ? 'Bonus Buku' : 'Beri Rating',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPurchaseButtons(Map<String, dynamic> data, bool adaDiskon,
+      dynamic hargaAkhir, dynamic hargaOriginal, String? kodeAfiliasi) {
+    return Container(
+      height: 60,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          // Icon Keranjang
+          Container(
+            width: 60,
+            height: 60,
+            decoration: BoxDecoration(
+              color: Colors.teal,
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(12),
+                bottomLeft: Radius.circular(12),
+              ),
+            ),
+            child: Obx(() => IconButton(
+                  icon: cartController.isAddingToCart.value
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Icon(
+                          Icons.shopping_cart,
+                          color: Colors.white,
+                          size: 24,
+                        ),
+                  onPressed: cartController.isAddingToCart.value
+                      ? null
+                      : () async {
+                          print('🟢 [BOOK DETAIL] Add to cart button pressed');
+
+                          final token = GetStorage().read('token');
+                          if (token == null) {
+                            print(
+                                '🔴 [BOOK DETAIL] No token found, redirecting to login');
+                            Get.toNamed('/login');
+                            return;
+                          }
+
+                          final idEbook =
+                              data['id_barang'] ?? data['id_ebook'] ?? '';
+                          print('🟢 [BOOK DETAIL] Book data: $data');
+                          print('🟢 [BOOK DETAIL] Extracted idEbook: $idEbook');
+                          print(
+                              '🟢 [BOOK DETAIL] Kode afiliasi: $kodeAfiliasi');
+
+                          if (idEbook.isEmpty) {
+                            print('🔴 [BOOK DETAIL] ID buku kosong');
+                            Get.snackbar(
+                              'Error',
+                              'ID buku tidak ditemukan',
+                              backgroundColor: Colors.red,
+                              colorText: Colors.white,
+                            );
+                            return;
+                          }
+
+                          print(
+                              '🟢 [BOOK DETAIL] Calling cartController.addToCart...');
+                          final success = await cartController.addToCart(
+                            idEbook: idEbook,
+                            ref: kodeAfiliasi,
+                          );
+                          print(
+                              '🟢 [BOOK DETAIL] Add to cart result: $success');
+
+                          if (success) {
+                            Get.snackbar(
+                              'Berhasil',
+                              'Berhasil ditambahkan ke keranjang',
+                              backgroundColor: Colors.green,
+                              colorText: Colors.white,
+                            );
+                          } else {
+                            Get.snackbar(
+                              'Error',
+                              cartController.error.value,
+                              backgroundColor: Colors.red,
+                              colorText: Colors.white,
+                            );
+                          }
+                        },
+                )),
+          ),
+
+          // Divider
+          Container(
+            width: 1,
+            height: 40,
+            color: Colors.grey[300],
+          ),
+
+          // Icon Preview
+          Container(
+            width: 60,
+            height: 60,
+            decoration: BoxDecoration(
+              color: Colors.teal,
+            ),
+            child: IconButton(
+              icon: const Icon(
+                Icons.menu_book,
+                color: Colors.white,
+                size: 24,
+              ),
+              onPressed: () {
+                Get.defaultDialog(
+                  title: 'Info',
+                  middleText:
+                      'Buku ini Tidak tersedia previewnya, Langsung beli saja ya...!',
+                  textConfirm: 'OK',
+                  confirmTextColor: Colors.white,
+                  onConfirm: () => Get.back(),
+                );
+              },
+            ),
+          ),
+
+          // Divider
+          Container(
+            width: 1,
+            height: 40,
+            color: Colors.grey[300],
+          ),
+
+          // Tombol Beli Sekarang
+          Expanded(
+            child: Container(
+              height: 60,
+              decoration: BoxDecoration(
+                color: Colors.orange,
+                borderRadius: const BorderRadius.only(
+                  topRight: Radius.circular(12),
+                  bottomRight: Radius.circular(12),
+                ),
+              ),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  borderRadius: const BorderRadius.only(
+                    topRight: Radius.circular(12),
+                    bottomRight: Radius.circular(12),
+                  ),
+                  onTap: () {
+                    final token = GetStorage().read('token');
+                    if ((data['status_ebook'] ?? '').toString().toLowerCase() ==
+                        'beli sekarang') {
+                      if (token == null) {
+                        Get.toNamed('/login', parameters: {
+                          'redirect': '/checkout',
+                          'id': data['id_barang']
+                        });
+                      } else {
+                        Get.toNamed('/checkout', parameters: {
+                          'id': data['id_barang'],
+                          if (kodeAfiliasi != null) 'afiliasi': kodeAfiliasi,
+                        });
+                      }
+                    }
+                  },
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Text(
+                          'Beli Sekarang',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          _formatCurrency(
+                              adaDiskon ? hargaAkhir : hargaOriginal),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

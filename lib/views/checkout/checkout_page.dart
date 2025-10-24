@@ -5,6 +5,10 @@ import '../../models/cart_model.dart';
 import '../../utils/theme_utils.dart';
 import '../../controllers/cart_controller.dart';
 import '../../controllers/checkout_controller.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import '../../config/app_config.dart';
+import 'package:get_storage/get_storage.dart';
 
 class CheckoutPage extends StatelessWidget {
   const CheckoutPage({super.key});
@@ -37,6 +41,8 @@ class CheckoutPage extends StatelessWidget {
   Widget _buildDirectCheckoutPage(BuildContext context, String idBarang) {
     final CheckoutController controller = Get.put(CheckoutController());
     final String? kodeAfiliasi = Get.parameters['afiliasi'];
+    final String? transactionId = Get.parameters['transaction_id'];
+    final bool isExistingTransaction = Get.parameters['is_existing'] == 'true';
 
     // Fetch checkout data for direct purchase
     controller.fetchCheckout(idBarang);
@@ -74,8 +80,8 @@ class CheckoutPage extends StatelessWidget {
           return const Center(child: Text('Data checkout tidak ditemukan'));
         }
 
-        return _buildDirectCheckoutContent(
-            context, checkoutData, controller, kodeAfiliasi);
+        return _buildDirectCheckoutContent(context, checkoutData, controller,
+            kodeAfiliasi, transactionId, isExistingTransaction);
       }),
     );
   }
@@ -84,7 +90,9 @@ class CheckoutPage extends StatelessWidget {
       BuildContext context,
       Map<String, dynamic> checkoutData,
       CheckoutController controller,
-      String? kodeAfiliasi) {
+      String? kodeAfiliasi,
+      String? transactionId,
+      bool isExistingTransaction) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -139,7 +147,8 @@ class CheckoutPage extends StatelessWidget {
           const SizedBox(height: 24),
 
           // Payment Section
-          _buildDirectPaymentSection(checkoutData, controller, kodeAfiliasi),
+          _buildDirectPaymentSection(checkoutData, controller, kodeAfiliasi,
+              transactionId, isExistingTransaction),
         ],
       ),
     );
@@ -210,8 +219,76 @@ class CheckoutPage extends StatelessWidget {
     );
   }
 
-  Widget _buildDirectPaymentSection(Map<String, dynamic> checkoutData,
-      CheckoutController controller, String? kodeAfiliasi) {
+  Widget _buildDirectPaymentSection(
+      Map<String, dynamic> checkoutData,
+      CheckoutController controller,
+      String? kodeAfiliasi,
+      String? transactionId,
+      bool isExistingTransaction) {
+    // DEBUG: Print all checkout data
+    print('🔍 [CHECKOUT DEBUG] ===========================================');
+    print('🔍 [CHECKOUT DEBUG] Full checkoutData: $checkoutData');
+    print(
+        '🔍 [CHECKOUT DEBUG] checkoutData keys: ${checkoutData.keys.toList()}');
+    print('🔍 [CHECKOUT DEBUG] isExistingTransaction: $isExistingTransaction');
+    print('🔍 [CHECKOUT DEBUG] transactionId: $transactionId');
+
+    // Check if this is an existing transaction (has payment URL or is from transaction history)
+    final bool hasExistingPayment = checkoutData['midtrans'] != null &&
+        checkoutData['midtrans']['redirect_url'] != null;
+
+    // Check for payment_redirect in existing transaction data
+    final bool hasPaymentRedirect = checkoutData['payment_redirect'] != null &&
+        checkoutData['payment_redirect'].toString().isNotEmpty;
+
+    final bool shouldShowCancelButton =
+        isExistingTransaction || hasExistingPayment || hasPaymentRedirect;
+
+    final bool hasPaymentUrl = hasPaymentRedirect || hasExistingPayment;
+
+    // DEBUG: Print payment URL detection
+    print('🔍 [CHECKOUT DEBUG] hasExistingPayment: $hasExistingPayment');
+    print('🔍 [CHECKOUT DEBUG] hasPaymentRedirect: $hasPaymentRedirect');
+    print(
+        '🔍 [CHECKOUT DEBUG] shouldShowCancelButton: $shouldShowCancelButton');
+    print('🔍 [CHECKOUT DEBUG] hasPaymentUrl: $hasPaymentUrl');
+
+    // DEBUG: Print specific payment data
+    if (checkoutData['midtrans'] != null) {
+      print('🔍 [CHECKOUT DEBUG] midtrans data: ${checkoutData['midtrans']}');
+      print(
+          '🔍 [CHECKOUT DEBUG] midtrans keys: ${checkoutData['midtrans'].keys.toList()}');
+      if (checkoutData['midtrans']['redirect_url'] != null) {
+        print(
+            '🔍 [CHECKOUT DEBUG] midtrans.redirect_url: ${checkoutData['midtrans']['redirect_url']}');
+      }
+    }
+
+    if (checkoutData['payment_redirect'] != null) {
+      print(
+          '🔍 [CHECKOUT DEBUG] payment_redirect: ${checkoutData['payment_redirect']}');
+    }
+
+    // DEBUG: Print other relevant fields
+    if (checkoutData['id_transaksi'] != null) {
+      print(
+          '🔍 [CHECKOUT DEBUG] id_transaksi: ${checkoutData['id_transaksi']}');
+    }
+    if (checkoutData['transaction_id'] != null) {
+      print(
+          '🔍 [CHECKOUT DEBUG] transaction_id: ${checkoutData['transaction_id']}');
+    }
+    if (checkoutData['status_transaksi'] != null) {
+      print(
+          '🔍 [CHECKOUT DEBUG] status_transaksi: ${checkoutData['status_transaksi']}');
+    }
+    if (checkoutData['tanggal_transaksi'] != null) {
+      print(
+          '🔍 [CHECKOUT DEBUG] tanggal_transaksi: ${checkoutData['tanggal_transaksi']}');
+    }
+
+    print('🔍 [CHECKOUT DEBUG] ===========================================');
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -224,58 +301,141 @@ class CheckoutPage extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 12),
-
-        // Midtrans Payment Button
-        SizedBox(
-          width: double.infinity,
-          height: 48,
-          child: Obx(() => ElevatedButton(
-                onPressed: controller.isLoading.value
-                    ? null
-                    : () =>
-                        _handleDirectMidtransPayment(controller, kodeAfiliasi),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green,
-                  foregroundColor: Colors.white,
-                ),
-                child: controller.isLoading.value
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
+        if (shouldShowCancelButton) ...[
+          // For existing transactions - show payment and cancel buttons
+          if (hasPaymentUrl) ...[
+            // Show both payment and cancel buttons
+            Row(
+              children: [
+                // Bayar Sekarang button
+                Expanded(
+                  child: SizedBox(
+                    height: 48,
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        if (hasPaymentRedirect) {
+                          // Use payment_redirect from existing transaction
+                          _handlePaymentRedirect(
+                              checkoutData['payment_redirect']);
+                        } else if (hasExistingPayment) {
+                          // Use existing payment URL from midtrans
+                          _handleExistingPayment(checkoutData['midtrans']);
+                        }
+                      },
+                      icon: const Icon(Icons.payment, size: 18),
+                      label: const Text('Bayar Sekarang'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
                         ),
-                      )
-                    : const Text('Bayar Sekarang'),
-              )),
-        ),
-
-        const SizedBox(height: 12),
-
-        // Original Payment Button (if midtrans data exists)
-        if (checkoutData['midtrans'] != null)
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                // Batal Bayar button
+                Expanded(
+                  child: SizedBox(
+                    height: 48,
+                    child: ElevatedButton.icon(
+                      onPressed: () =>
+                          _handleCancelPayment(checkoutData, transactionId),
+                      icon: const Icon(Icons.cancel, size: 18),
+                      label: const Text('Batal Bayar'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ] else ...[
+            // Show only cancel button if no payment URL
+            Row(
+              children: [
+                Expanded(
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.orange[50],
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.orange[200]!),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.info, color: Colors.orange[700], size: 20),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'URL pembayaran tidak tersedia',
+                            style: TextStyle(
+                              color: Colors.orange[700],
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                // Batal Bayar button
+                Expanded(
+                  child: SizedBox(
+                    height: 48,
+                    child: ElevatedButton.icon(
+                      onPressed: () =>
+                          _handleCancelPayment(checkoutData, transactionId),
+                      icon: const Icon(Icons.cancel, size: 18),
+                      label: const Text('Batal Bayar'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ] else ...[
+          // For new transactions - show create payment button
           SizedBox(
             width: double.infinity,
             height: 48,
-            child: ElevatedButton(
-              onPressed: () => _handlePayment(checkoutData['midtrans']),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: colorPrimary,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-              child: const Text(
-                'Lanjutkan Pembayaran',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
+            child: Obx(() => ElevatedButton(
+                  onPressed: controller.isLoading.value
+                      ? null
+                      : () => _handleDirectMidtransPayment(
+                          controller, kodeAfiliasi),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green,
+                    foregroundColor: Colors.white,
+                  ),
+                  child: controller.isLoading.value
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Text('Bayar Sekarang'),
+                )),
           ),
+        ],
       ],
     );
   }
@@ -302,7 +462,7 @@ class CheckoutPage extends StatelessWidget {
               child: Column(
                 children: [
                   _buildSummaryRow(
-                      'Subtotal', checkoutData.subtotal['subtotal'] ?? 0),
+                      'Harga', checkoutData.subtotal['harga'] ?? 0),
                   if (checkoutData.subtotal['diskon'] != null) ...[
                     _buildSummaryRow('Diskon Barang',
                         -(checkoutData.subtotal['diskon']['barang'] ?? 0)),
@@ -312,6 +472,8 @@ class CheckoutPage extends StatelessWidget {
                           -(checkoutData.subtotal['diskon']['affiliator'] ??
                               0)),
                   ],
+                  _buildSummaryRow(
+                      'Subtotal', checkoutData.subtotal['subtotal'] ?? 0),
                   _buildSummaryRow('PPN', checkoutData.subtotal['ppn'] ?? 0),
                   const Divider(),
                   _buildSummaryRow(
@@ -713,6 +875,253 @@ class CheckoutPage extends StatelessWidget {
       Get.snackbar(
         'Error',
         'Failed to process payment: $e',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+    }
+  }
+
+  void _handlePaymentRedirect(String paymentRedirect) {
+    print('🔍 [PAYMENT DEBUG] ===========================================');
+    print('🔍 [PAYMENT DEBUG] _handlePaymentRedirect called');
+    print('🔍 [PAYMENT DEBUG] paymentRedirect: $paymentRedirect');
+    print(
+        '🔍 [PAYMENT DEBUG] paymentRedirect type: ${paymentRedirect.runtimeType}');
+    print(
+        '🔍 [PAYMENT DEBUG] paymentRedirect length: ${paymentRedirect.length}');
+    print(
+        '🔍 [PAYMENT DEBUG] paymentRedirect isEmpty: ${paymentRedirect.isEmpty}');
+    print(
+        '🔍 [PAYMENT DEBUG] paymentRedirect isNotEmpty: ${paymentRedirect.isNotEmpty}');
+
+    if (paymentRedirect.isNotEmpty) {
+      print('🟡 [CHECKOUT] Using payment_redirect: $paymentRedirect');
+      // Navigate to Midtrans page with payment_redirect URL
+      Get.toNamed('/midtrans', parameters: {'url': paymentRedirect});
+    } else {
+      print('🔴 [CHECKOUT] Payment redirect is empty');
+      Get.snackbar(
+        'Error',
+        'URL pembayaran tidak ditemukan',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+    }
+    print('🔍 [PAYMENT DEBUG] ===========================================');
+  }
+
+  void _handleExistingPayment(Map<String, dynamic> midtrans) {
+    print('🔍 [MIDTRANS DEBUG] ===========================================');
+    print('🔍 [MIDTRANS DEBUG] _handleExistingPayment called');
+    print('🔍 [MIDTRANS DEBUG] midtrans data: $midtrans');
+    print('🔍 [MIDTRANS DEBUG] midtrans keys: ${midtrans.keys.toList()}');
+
+    final redirectUrl = midtrans['redirect_url'];
+    print('🔍 [MIDTRANS DEBUG] redirectUrl: $redirectUrl');
+    print('🔍 [MIDTRANS DEBUG] redirectUrl type: ${redirectUrl.runtimeType}');
+    print('🔍 [MIDTRANS DEBUG] redirectUrl is null: ${redirectUrl == null}');
+    if (redirectUrl != null) {
+      print('🔍 [MIDTRANS DEBUG] redirectUrl length: ${redirectUrl.length}');
+      print('🔍 [MIDTRANS DEBUG] redirectUrl isEmpty: ${redirectUrl.isEmpty}');
+      print(
+          '🔍 [MIDTRANS DEBUG] redirectUrl isNotEmpty: ${redirectUrl.isNotEmpty}');
+    }
+
+    if (redirectUrl != null && redirectUrl.isNotEmpty) {
+      print('🟡 [CHECKOUT] Using existing payment URL: $redirectUrl');
+      // Navigate to Midtrans page with existing payment URL
+      Get.toNamed('/midtrans', parameters: {'url': redirectUrl});
+    } else {
+      print('🔴 [CHECKOUT] Redirect URL not found in midtrans data');
+      Get.snackbar(
+        'Error',
+        'URL pembayaran tidak ditemukan',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+    }
+    print('🔍 [MIDTRANS DEBUG] ===========================================');
+  }
+
+  void _handleCancelPayment(
+      Map<String, dynamic> checkoutData, String? transactionId) async {
+    try {
+      print('🔍 [CANCEL DEBUG] ===========================================');
+      print('🔍 [CANCEL DEBUG] _handleCancelPayment called');
+      print('🔍 [CANCEL DEBUG] checkoutData: $checkoutData');
+      print('🔍 [CANCEL DEBUG] transactionId: $transactionId');
+      print(
+          '🔍 [CANCEL DEBUG] checkoutData keys: ${checkoutData.keys.toList()}');
+
+      // Use transaction ID from parameter or checkout data
+      final finalTransactionId = transactionId ??
+          checkoutData['id_transaksi'] ??
+          checkoutData['transaction_id'];
+
+      print('🔍 [CANCEL DEBUG] finalTransactionId: $finalTransactionId');
+      print(
+          '🔍 [CANCEL DEBUG] finalTransactionId type: ${finalTransactionId.runtimeType}');
+      print(
+          '🔍 [CANCEL DEBUG] finalTransactionId is null: ${finalTransactionId == null}');
+      if (finalTransactionId != null) {
+        print(
+            '🔍 [CANCEL DEBUG] finalTransactionId length: ${finalTransactionId.length}');
+        print(
+            '🔍 [CANCEL DEBUG] finalTransactionId isEmpty: ${finalTransactionId.isEmpty}');
+        print(
+            '🔍 [CANCEL DEBUG] finalTransactionId isNotEmpty: ${finalTransactionId.isNotEmpty}');
+      }
+
+      print('🟡 [CHECKOUT] Cancel payment for existing transaction');
+
+      // Show confirmation dialog
+      final confirmed = await Get.dialog<bool>(
+        AlertDialog(
+          title: const Text('Batalkan Pembayaran'),
+          content:
+              const Text('Apakah Anda yakin ingin membatalkan pembayaran ini?'),
+          actions: [
+            TextButton(
+              onPressed: () => Get.back(result: false),
+              child: const Text('Tidak'),
+            ),
+            TextButton(
+              onPressed: () => Get.back(result: true),
+              child: const Text('Ya, Batalkan'),
+            ),
+          ],
+        ),
+      );
+
+      if (confirmed != true) return;
+
+      // Show loading
+      Get.dialog(
+        const Center(child: CircularProgressIndicator()),
+        barrierDismissible: false,
+      );
+
+      if (finalTransactionId == null || finalTransactionId.toString().isEmpty) {
+        Get.back(); // Close loading
+        Get.snackbar(
+          'Error',
+          'ID transaksi tidak ditemukan',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+        );
+        return;
+      }
+
+      // Call cancel API
+      final token = GetStorage().read('token');
+      if (token == null) {
+        Get.back(); // Close loading
+        Get.snackbar(
+          'Error',
+          'Token tidak ditemukan',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+        );
+        return;
+      }
+
+      final url = Uri.parse('${AppConfig.baseUrlApp}/transaction/cancel');
+      final response = await http.post(
+        url,
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'Authorization': 'Bearer $token',
+        },
+        body: {
+          '_method': 'PUT',
+          'invoice_id': finalTransactionId.toString(),
+        },
+      );
+
+      Get.back(); // Close loading
+
+      print(
+          '🔍 [CANCEL API DEBUG] ===========================================');
+      print(
+          '🔍 [CANCEL API DEBUG] Cancel response status: ${response.statusCode}');
+      print(
+          '🔍 [CANCEL API DEBUG] Cancel response headers: ${response.headers}');
+      print('🔍 [CANCEL API DEBUG] Cancel response body: ${response.body}');
+      print(
+          '🔍 [CANCEL API DEBUG] Cancel response body length: ${response.body.length}');
+      print(
+          '🔍 [CANCEL API DEBUG] ===========================================');
+
+      print('🟡 [CHECKOUT] Cancel response: ${response.statusCode}');
+      print('🟡 [CHECKOUT] Cancel body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final result = jsonDecode(response.body);
+        print(
+            '🔍 [CANCEL JSON DEBUG] ===========================================');
+        print('🔍 [CANCEL JSON DEBUG] JSON result: $result');
+        print(
+            '🔍 [CANCEL JSON DEBUG] JSON result keys: ${result.keys.toList()}');
+        print('🔍 [CANCEL JSON DEBUG] JSON result status: ${result['status']}');
+        print(
+            '🔍 [CANCEL JSON DEBUG] JSON result message: ${result['message']}');
+        if (result['data'] != null) {
+          print('🔍 [CANCEL JSON DEBUG] JSON result data: ${result['data']}');
+          print(
+              '🔍 [CANCEL JSON DEBUG] JSON result data keys: ${result['data'].keys.toList()}');
+        }
+        print(
+            '🔍 [CANCEL JSON DEBUG] ===========================================');
+
+        if (result['status'] == true) {
+          Get.snackbar(
+            'Berhasil',
+            'Pembayaran berhasil dibatalkan',
+            snackPosition: SnackPosition.BOTTOM,
+            backgroundColor: Colors.green,
+            colorText: Colors.white,
+          );
+
+          // Navigate back to transaction history
+          Get.offAllNamed('/home');
+          Get.toNamed('/transaksi');
+        } else {
+          Get.snackbar(
+            'Error',
+            result['message'] ?? 'Gagal membatalkan pembayaran',
+            snackPosition: SnackPosition.BOTTOM,
+            backgroundColor: Colors.red,
+            colorText: Colors.white,
+          );
+        }
+      } else {
+        Get.snackbar(
+          'Error',
+          'Gagal membatalkan pembayaran',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+        );
+      }
+    } catch (e) {
+      Get.back(); // Close loading if still open
+      print(
+          '🔍 [CANCEL ERROR DEBUG] ===========================================');
+      print('🔍 [CANCEL ERROR DEBUG] Error type: ${e.runtimeType}');
+      print('🔍 [CANCEL ERROR DEBUG] Error message: $e');
+      print('🔍 [CANCEL ERROR DEBUG] Error toString: ${e.toString()}');
+      print(
+          '🔍 [CANCEL ERROR DEBUG] ===========================================');
+
+      print('🔴 [CHECKOUT] Error in cancel payment: $e');
+      Get.snackbar(
+        'Error',
+        'Terjadi kesalahan: $e',
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.red,
         colorText: Colors.white,

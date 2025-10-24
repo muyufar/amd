@@ -75,6 +75,8 @@ class CartService {
     String? ref,
   }) async {
     try {
+      print('🔵 [CART SERVICE] Adding to cart - idEbook: $idEbook, ref: $ref');
+
       final body = {
         'id_ebook': idEbook,
         if (ref != null) 'ref': ref,
@@ -82,14 +84,22 @@ class CartService {
 
       final response = await _request('POST', '/Cart/add', body: body);
 
+      print(
+          '🔵 [CART SERVICE] Add to cart response status: ${response.statusCode}');
+      print('🔵 [CART SERVICE] Add to cart response body: ${response.body}');
+
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
+        print('🔵 [CART SERVICE] Parsed response data: $data');
         return data;
       } else {
-        throw Exception('Failed to add item to cart');
+        final errorData = jsonDecode(response.body);
+        print('🔴 [CART SERVICE] Add to cart error: $errorData');
+        throw Exception(
+            'Failed to add item to cart: ${errorData['message'] ?? 'Unknown error'}');
       }
     } catch (e) {
-      print('Error adding to cart: $e');
+      print('🔴 [CART SERVICE] Error adding to cart: $e');
       rethrow;
     }
   }

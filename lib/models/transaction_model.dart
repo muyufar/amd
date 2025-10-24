@@ -1,4 +1,3 @@
-
 class TransactionHistoryModel {
   final bool isAllReview;
   final String idTransaksi;
@@ -7,6 +6,7 @@ class TransactionHistoryModel {
   final int totalHargaFinal;
   final String jumlahBarang;
   final List<TransactionItemModel> barang;
+  final String? paymentUrl;
 
   TransactionHistoryModel({
     required this.isAllReview,
@@ -16,6 +16,7 @@ class TransactionHistoryModel {
     required this.totalHargaFinal,
     required this.jumlahBarang,
     required this.barang,
+    this.paymentUrl,
   });
 
   factory TransactionHistoryModel.fromJson(Map<String, dynamic> json) {
@@ -29,6 +30,7 @@ class TransactionHistoryModel {
       barang: (json['barang'] as List<dynamic>? ?? [])
           .map((e) => TransactionItemModel.fromJson(e))
           .toList(),
+      paymentUrl: json['payment_url'] ?? json['url_pembayaran'],
     );
   }
 }
@@ -56,7 +58,7 @@ class TransactionItemModel {
       slugEbook: json['slug_ebook'] ?? '',
       gambar1: json['gambar1'] ?? '',
       judul: json['judul'] ?? '',
-      subTotal: json['sub_total'] ?? 0,
+      subTotal: json['subtotal'] ?? 0,
       isReviewed: json['isReviewed'] ?? false,
     );
   }

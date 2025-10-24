@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../services/book_service.dart';
 import '../services/wishlist_service.dart';
@@ -11,6 +12,8 @@ class BookDetailController extends GetxController {
   var loadingWishlist = false.obs;
   var isWishlisted = false.obs;
   var loadingReview = false.obs;
+  var loadingReviews = false.obs;
+  var reviews = Rxn<Map<String, dynamic>>();
   String? _currentSlug;
 
   Future<Map<String, dynamic>?> submitReview({
@@ -27,8 +30,13 @@ class BookDetailController extends GetxController {
         description: description,
         isHide: isHide,
       );
-      if (res['status'] == true && _currentSlug != null) {
-        await fetchDetail(_currentSlug!);
+      if (res['status'] == true) {
+        // Refresh reviews after submitting a new review
+        await fetchReviews(idEbook);
+        // Also refresh detail to update status
+        if (_currentSlug != null) {
+          await fetchDetail(_currentSlug!);
+        }
       }
       return res;
     } catch (e) {
@@ -48,10 +56,32 @@ class BookDetailController extends GetxController {
     try {
       final data = await _bookService.fetchDetailBuku(slug);
       detail.value = data;
+
+      // Fetch reviews separately using the new API
+      if (data != null) {
+        final idEbook = data['id_barang'] ?? data['id_ebook'] ?? '';
+        if (idEbook.isNotEmpty) {
+          await fetchReviews(idEbook);
+        }
+      }
     } catch (e) {
       error.value = e.toString();
     } finally {
       isLoading.value = false;
+    }
+  }
+
+  Future<void> fetchReviews(String idEbook) async {
+    loadingReviews.value = true;
+    try {
+      final data = await _bookService.fetchReviewList(idEbook);
+      reviews.value = data;
+    } catch (e) {
+      print('🔴 [BOOK DETAIL CONTROLLER] Error fetching reviews: $e');
+      // Set empty reviews on error
+      reviews.value = {'totals': '0.0', 'jumlah': 0, 'list': []};
+    } finally {
+      loadingReviews.value = false;
     }
   }
 
@@ -60,14 +90,61 @@ class BookDetailController extends GetxController {
     try {
       final res = await _wishlistService.addToWishlist(idEbook);
       final msg = (res['message'] ?? '').toString().toLowerCase();
+
+      // Check if the book is already in collection
+      if (msg.contains('sudah ada di koleksi') ||
+          msg.contains('sudah ada di koleksi buku') ||
+          msg.contains('buku sudah ada di koleksi') ||
+          msg.contains('sudah ada di bookshelf') ||
+          msg.contains('sudah dibeli') ||
+          msg.contains('already in collection') ||
+          msg.contains('sudah dimiliki')) {
+        // Show notification that book is already in collection
+        Get.snackbar(
+          'Info',
+          'Buku sudah ada di koleksi, Silahkan dibaca',
+          backgroundColor: Colors.blue,
+          colorText: Colors.white,
+          duration: const Duration(seconds: 3),
+          snackPosition: SnackPosition.TOP,
+          icon: const Icon(Icons.info_outline, color: Colors.white),
+        );
+        return;
+      }
+
       if (msg.contains('hapus')) {
         isWishlisted.value = false;
+        Get.snackbar(
+          'Berhasil',
+          'Buku dihapus dari wishlist',
+          backgroundColor: Colors.orange,
+          colorText: Colors.white,
+          duration: const Duration(seconds: 2),
+          snackPosition: SnackPosition.TOP,
+          icon: const Icon(Icons.favorite_border, color: Colors.white),
+        );
       } else if (msg.contains('berhasil') || msg.contains('ditambahkan')) {
         isWishlisted.value = true;
+        Get.snackbar(
+          'Berhasil',
+          'Buku ditambahkan ke wishlist',
+          backgroundColor: Colors.green,
+          colorText: Colors.white,
+          duration: const Duration(seconds: 2),
+          snackPosition: SnackPosition.TOP,
+          icon: const Icon(Icons.favorite, color: Colors.white),
+        );
       }
-      // Bisa tambahkan snackbar/toast di UI
     } catch (e) {
-      // Bisa tambahkan error handling di UI
+      Get.snackbar(
+        'Error',
+        'Gagal mengupdate wishlist: ${e.toString()}',
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+        duration: const Duration(seconds: 3),
+        snackPosition: SnackPosition.TOP,
+        icon: const Icon(Icons.error_outline, color: Colors.white),
+      );
     } finally {
       loadingWishlist.value = false;
     }

@@ -1,4 +1,5 @@
 import 'package:andi_digital/views/profile/profile_page.dart';
+import 'package:andi_digital/views/publisher/publisher_page.dart';
 import 'package:andi_digital/views/wishlist/wishlist_page.dart';
 import 'package:flutter/material.dart';
 import 'package:get_storage/get_storage.dart';
@@ -10,6 +11,8 @@ import '../bookshelf/bookshelf_page.dart';
 import '../transaction/transaction_page.dart';
 import 'package:palette_generator/palette_generator.dart';
 import 'ebook_list_page.dart';
+import '../category/category_page.dart';
+import '../../widgets/loading_animations.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -232,8 +235,9 @@ class _HomeContentState extends State<HomeContent> {
                                 border: InputBorder.none,
                                 isDense: true,
                               ),
-                              onChanged: (value) {
-                                // TODO: Implement search logic
+                              readOnly: true,
+                              onTap: () {
+                                Get.toNamed('/search');
                               },
                             ),
                           ),
@@ -307,8 +311,12 @@ class _HomeContentState extends State<HomeContent> {
                                     width: double.infinity,
                                     height: 160,
                                     color: Colors.grey[200],
-                                    child: const Center(
-                                        child: CircularProgressIndicator()),
+                                    child: Center(
+                                        child: LoadingAnimations
+                                            .buildCompactLoading(
+                                      text: 'Memuat kategori...',
+                                      color: Colors.blue,
+                                    )),
                                   );
                                 },
                                 frameBuilder: (context, child, frame,
@@ -333,7 +341,9 @@ class _HomeContentState extends State<HomeContent> {
                           children: [
                             Expanded(
                               child: ElevatedButton(
-                                onPressed: () {},
+                                onPressed: () {
+                                  Get.to(() => CategoryPage());
+                                },
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: Colors.white,
                                   foregroundColor: colorPrimary,
@@ -351,7 +361,9 @@ class _HomeContentState extends State<HomeContent> {
                             const SizedBox(width: 12),
                             Expanded(
                               child: ElevatedButton(
-                                onPressed: () {},
+                                onPressed: () {
+                                  Get.to(() => PublisherPage());
+                                },
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: Colors.white,
                                   foregroundColor: colorPrimary,
@@ -397,8 +409,10 @@ class _HomeContentState extends State<HomeContent> {
                             290, // atau 270, atau lebih besar sesuai kebutuhan
                         child: Obx(() {
                           if (controller.isLoadingTerbaru.value) {
-                            return const Center(
-                                child: CircularProgressIndicator());
+                            return LoadingAnimations.buildCompactLoading(
+                              text: 'Memuat buku terbaru...',
+                              color: Colors.green,
+                            );
                           } else if (controller.errorTerbaru.value.isNotEmpty) {
                             return Center(
                                 child: Text(controller.errorTerbaru.value));
@@ -445,8 +459,10 @@ class _HomeContentState extends State<HomeContent> {
                         height: 290,
                         child: Obx(() {
                           if (controller.isLoadingTerlaris.value) {
-                            return const Center(
-                                child: CircularProgressIndicator());
+                            return LoadingAnimations.buildCompactLoading(
+                              text: 'Memuat buku terlaris...',
+                              color: Colors.orange,
+                            );
                           } else if (controller
                               .errorTerlaris.value.isNotEmpty) {
                             return Center(
@@ -468,6 +484,9 @@ class _HomeContentState extends State<HomeContent> {
                         }),
                       ),
                       const SizedBox(height: 16),
+                      // Kategori Section
+                      // CategorySection(),
+                      // const SizedBox(height: 16),
                     ],
                   ),
                 ),

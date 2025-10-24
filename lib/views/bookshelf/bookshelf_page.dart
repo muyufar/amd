@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import '../../controllers/bookshelf_controller.dart';
 import '../../utils/theme_utils.dart';
 import 'bookshelf_detail_page.dart';
+import '../../widgets/loading_animations.dart';
 
 class BookshelfPage extends StatefulWidget {
   const BookshelfPage({super.key});
@@ -44,7 +45,7 @@ class _BookshelfPageState extends State<BookshelfPage> {
       ),
       body: Obx(() {
         if (controller.isLoading.value) {
-          return const Center(child: CircularProgressIndicator());
+          return LoadingAnimations.buildBookshelfLoading();
         } else if (controller.error.value.isNotEmpty) {
           return Center(child: Text(controller.error.value));
         } else if (controller.bukuOwned.isEmpty) {

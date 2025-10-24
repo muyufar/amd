@@ -52,22 +52,31 @@ class CartController extends GetxController {
       isAddingToCart.value = true;
       error.value = '';
 
+      print(
+          '🟡 [CART CONTROLLER] Adding to cart - idEbook: $idEbook, ref: $ref');
+
       final result = await _cartService.addToCart(
         idEbook: idEbook,
         ref: ref,
       );
 
+      print('🟡 [CART CONTROLLER] Add to cart result: $result');
+
       if (result != null && result['status'] == true) {
+        print(
+            '🟡 [CART CONTROLLER] Successfully added to cart, refreshing items...');
         // Refresh cart items after adding
         await fetchCartItems();
         return true;
       } else {
-        error.value = result?['message'] ?? 'Failed to add to cart';
+        final errorMessage = result?['message'] ?? 'Failed to add to cart';
+        error.value = errorMessage;
+        print('🔴 [CART CONTROLLER] Failed to add to cart: $errorMessage');
         return false;
       }
     } catch (e) {
       error.value = e.toString();
-      print('Error adding to cart: $e');
+      print('🔴 [CART CONTROLLER] Error adding to cart: $e');
       return false;
     } finally {
       isAddingToCart.value = false;
