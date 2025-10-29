@@ -15,6 +15,9 @@ class CartController extends GetxController {
   final RxBool isCheckingOut = false.obs;
   final RxString error = ''.obs;
 
+  // Checkbox management
+  final RxSet<String> selectedItems = <String>{}.obs;
+
   // Cart count
   int get cartCount => cartItems.length;
 
@@ -115,9 +118,26 @@ class CartController extends GetxController {
       isCheckingOut.value = true;
       error.value = '';
 
-      // Get all ebook IDs from cart items
-      final ebookIds = cartItems.map((item) => item.idBarang).toList();
-      print('🟡 [CART CONTROLLER] Checkout with ebook IDs: $ebookIds');
+      // Check if any items are selected
+      if (selectedItems.isEmpty) {
+        error.value = 'Pilih minimal 1 item untuk checkout';
+        return null;
+      }
+
+      // Get only selected ebook IDs from cart items
+      final ebookIds = cartItems
+          .where((item) => selectedItems.contains(item.idBarang))
+          .map((item) => item.idBarang)
+          .toList();
+
+      print('🟡 [CART CONTROLLER] Checkout with selected ebook IDs: $ebookIds');
+      print(
+          '🟡 [CART CONTROLLER] Selected items count: ${selectedItems.length}');
+
+      if (ebookIds.isEmpty) {
+        error.value = 'Tidak ada item yang dipilih untuk checkout';
+        return null;
+      }
 
       final result = await _cartService.checkoutCart(ebookIds);
 
@@ -150,13 +170,26 @@ class CartController extends GetxController {
         return null;
       }
 
-      // Get all ebook IDs from cart items
-      final ebookIds = cartItems.map((item) => item.idBarang).toList();
-      print('🟡 [CART CONTROLLER] Pay with Midtrans with ebook IDs: $ebookIds');
-      print('🟡 [CART CONTROLLER] Cart items count: ${cartItems.length}');
+      // Check if any items are selected
+      if (selectedItems.isEmpty) {
+        error.value = 'Pilih minimal 1 item untuk checkout';
+        return null;
+      }
+
+      // Get only selected ebook IDs from cart items
+      final ebookIds = cartItems
+          .where((item) => selectedItems.contains(item.idBarang))
+          .map((item) => item.idBarang)
+          .toList();
+
+      print(
+          '🟡 [CART CONTROLLER] Pay with Midtrans with selected ebook IDs: $ebookIds');
+      print(
+          '🟡 [CART CONTROLLER] Selected items count: ${selectedItems.length}');
+      print('🟡 [CART CONTROLLER] Total cart items: ${cartItems.length}');
 
       if (ebookIds.isEmpty) {
-        error.value = 'Tidak ada item yang dapat dibayar';
+        error.value = 'Tidak ada item yang dipilih untuk dibayar';
         return null;
       }
 
@@ -164,8 +197,9 @@ class CartController extends GetxController {
           usePoinUser: usePoinUser, voucherCode: voucherCode);
 
       if (result != null) {
-        // Clear cart after successful payment
-        cartItems.clear();
+        // Remove only selected items from cart after successful payment
+        cartItems.removeWhere((item) => selectedItems.contains(item.idBarang));
+        selectedItems.clear();
         return result;
       } else {
         error.value = 'Payment failed';
@@ -183,6 +217,37 @@ class CartController extends GetxController {
   // Calculate total price
   int get totalPrice {
     return cartItems.fold(0, (sum, item) => sum + item.subtotal);
+  }
+
+  // Calculate selected items total price
+  int get selectedItemsTotalPrice {
+    return cartItems
+        .where((item) => selectedItems.contains(item.idBarang))
+        .fold(0, (sum, item) => sum + item.subtotal);
+  }
+
+  // Get selected items count
+  int get selectedItemsCount => selectedItems.length;
+
+  // Get selected items
+  List<CartBook> get selectedCartItems {
+    return cartItems
+        .where((item) => selectedItems.contains(item.idBarang))
+        .toList();
+  }
+
+  // Toggle item selection
+  void toggleItemSelection(String idBarang) {
+    if (selectedItems.contains(idBarang)) {
+      selectedItems.remove(idBarang);
+    } else {
+      selectedItems.add(idBarang);
+    }
+  }
+
+  // Clear all selections
+  void clearSelections() {
+    selectedItems.clear();
   }
 
   // Check if item is in cart

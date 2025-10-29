@@ -521,15 +521,16 @@ class CheckoutPage extends StatelessWidget {
               ),
             const SizedBox(height: 16),
 
-            // Items List
-            _buildSection(
-              title: 'Item Pesanan',
-              child: Column(
-                children: checkoutData.dataCheckout
-                    .map((item) => _buildItemCard(item))
-                    .toList(),
-              ),
-            ),
+            // Items List - Only show selected items
+            Obx(() => _buildSection(
+                  title:
+                      'Item Pesanan (${cartController.selectedItemsCount} item)',
+                  child: Column(
+                    children: cartController.selectedCartItems
+                        .map((item) => _buildItemCard(item))
+                        .toList(),
+                  ),
+                )),
             const SizedBox(height: 16),
 
             // Payment Buttons

@@ -13,6 +13,7 @@ import 'package:palette_generator/palette_generator.dart';
 import 'ebook_list_page.dart';
 import '../category/category_page.dart';
 import '../../widgets/loading_animations.dart';
+import 'banner_slider.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -149,33 +150,36 @@ class HomeContent extends StatefulWidget {
 class _HomeContentState extends State<HomeContent> {
   Color? bannerColor;
   Color? bannerColor2;
-  String? currentBannerUrl;
   final HomeController controller = Get.find<HomeController>();
   final CartController cartController = Get.find<CartController>();
 
   @override
   void initState() {
     super.initState();
-    // Set url default sesuai banner pertama
-    currentBannerUrl =
-        'https://andipublisher.com/images/banner/1684211764_BANNER.jpeg';
-    _updateBannerColor(currentBannerUrl!);
     // Refresh data home otomatis saat halaman dimuat
     controller.fetchBukuTerbaru();
     controller.fetchBukuTerlaris();
   }
 
   Future<void> _updateBannerColor(String url) async {
-    final imageProvider = NetworkImage(url);
-    final PaletteGenerator paletteGenerator =
-        await PaletteGenerator.fromImageProvider(imageProvider);
-    setState(() {
-      bannerColor = paletteGenerator.dominantColor?.color ??
-          Color.fromARGB(255, 255, 255, 255);
-      bannerColor2 = paletteGenerator.colors.length > 1
-          ? paletteGenerator.colors.elementAt(1)
-          : bannerColor;
-    });
+    if (url.isEmpty) return;
+
+    try {
+      final imageProvider = NetworkImage(url);
+      final PaletteGenerator paletteGenerator =
+          await PaletteGenerator.fromImageProvider(imageProvider);
+      if (mounted) {
+        setState(() {
+          bannerColor = paletteGenerator.dominantColor?.color ??
+              Color.fromARGB(255, 255, 255, 255);
+          bannerColor2 = paletteGenerator.colors.length > 1
+              ? paletteGenerator.colors.elementAt(1)
+              : bannerColor;
+        });
+      }
+    } catch (e) {
+      print('Error updating banner color: $e');
+    }
   }
 
   @override
@@ -295,43 +299,11 @@ class _HomeContentState extends State<HomeContent> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Banner sekarang ikut scroll
-                      SizedBox(
-                        width: MediaQuery.of(context).size.width,
-                        height: 180,
-                        child: currentBannerUrl != null
-                            ? Image.network(
-                                currentBannerUrl!,
-                                fit: BoxFit.cover,
-                                loadingBuilder:
-                                    (context, child, loadingProgress) {
-                                  if (loadingProgress == null) return child;
-                                  // Sembunyikan gradasi saat loading
-                                  return Container(
-                                    width: double.infinity,
-                                    height: 160,
-                                    color: Colors.grey[200],
-                                    child: Center(
-                                        child: LoadingAnimations
-                                            .buildCompactLoading(
-                                      text: 'Memuat kategori...',
-                                      color: Colors.blue,
-                                    )),
-                                  );
-                                },
-                                frameBuilder: (context, child, frame,
-                                    wasSynchronouslyLoaded) {
-                                  if (frame != null && bannerColor == null) {
-                                    _updateBannerColor(currentBannerUrl!);
-                                  }
-                                  return child;
-                                },
-                              )
-                            : Container(
-                                width: double.infinity,
-                                height: 160,
-                                color: Colors.grey[200],
-                              ),
+                      // Banner slider dengan API
+                      BannerSlider(
+                        onBannerChanged: (imageUrl) {
+                          _updateBannerColor(imageUrl);
+                        },
                       ),
                       const SizedBox(height: 24),
                       // Tombol kategori & penerbit
@@ -505,10 +477,9 @@ class BookCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final double rating =
-        double.tryParse(buku['rating']?.toString() ?? '0') ?? 0.0;
     return Container(
       width: 160,
+      height: 280, // Fixed height to prevent overflow
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -529,61 +500,57 @@ class BookCard extends StatelessWidget {
         },
         borderRadius: borderRadiusTheme,
         child: Column(
-          mainAxisSize: MainAxisSize.min, // Fix overflow
+          mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Cover Image full width
             ClipRRect(
               borderRadius:
                   const BorderRadius.vertical(top: Radius.circular(14)),
-              child: Image.network(
-                buku['gambar1'] ?? '',
-                height: 130, // sedikit lebih tinggi
-                width: 160,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Container(
-                  height: 130,
-                  width: 160,
-                  color: colorGrey.withOpacity(0.2),
-                  child: Icon(Icons.broken_image, color: colorGrey),
+              child: SizedBox(
+                height: 180, // Fixed height untuk cover
+                width: double.infinity,
+                child: Image.network(
+                  buku['gambar1'] ?? '',
+                  fit: BoxFit.contain,
+                  errorBuilder: (_, __, ___) => Container(
+                    color: colorGrey.withOpacity(0.2),
+                    child: Icon(Icons.broken_image, color: colorGrey),
+                  ),
                 ),
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(12, 10, 12, 0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    buku['judul'] ?? '-',
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: textTheme.titleSmall
-                        ?.copyWith(fontWeight: FontWeight.w600, fontSize: 16),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    'Rp ${buku['harga'] ?? '-'}',
-                    style: textTheme.bodyMedium?.copyWith(
+            // Book details
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(8, 8, 8, 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    // Book title
+                    Text(
+                      buku['judul'] ?? '-',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                        height: 1.2,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    // Price
+                    Text(
+                      'Rp ${buku['harga'] ?? '-'}',
+                      style: textTheme.bodyMedium?.copyWith(
                         color: colorBlack,
                         fontWeight: FontWeight.bold,
-                        fontSize: 15),
-                  ),
-                  const SizedBox(height: 2),
-                  Text('Terjual: ${buku['jumlah_terjual'] ?? '0'}',
-                      style: textTheme.bodySmall
-                          ?.copyWith(color: colorGrey, fontSize: 13)),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: List.generate(
-                        5,
-                        (i) => Icon(
-                              Icons.star,
-                              size: 20,
-                              color: i < rating ? Colors.amber : colorTextGrey,
-                            )),
-                  ),
-                  const SizedBox(height: 8),
-                ],
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ],

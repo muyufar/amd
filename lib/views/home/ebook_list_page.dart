@@ -106,8 +106,6 @@ class _BookCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final double rating =
-        double.tryParse(buku['rating']?.toString() ?? '0') ?? 0.0;
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -130,58 +128,54 @@ class _BookCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Cover Image full width
             ClipRRect(
               borderRadius:
                   const BorderRadius.vertical(top: Radius.circular(14)),
-              child: Image.network(
-                buku['gambar1'] ?? '',
-                height: 130,
+              child: SizedBox(
+                height: 180, // Fixed height untuk cover
                 width: double.infinity,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Container(
-                  height: 130,
-                  width: double.infinity,
-                  color: colorGrey.withOpacity(0.2),
-                  child: Icon(Icons.broken_image, color: colorGrey),
+                child: Image.network(
+                  buku['gambar1'] ?? '',
+                  fit: BoxFit.contain,
+                  errorBuilder: (_, __, ___) => Container(
+                    color: colorGrey.withOpacity(0.2),
+                    child: Icon(Icons.broken_image, color: colorGrey),
+                  ),
                 ),
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(12, 10, 12, 0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    buku['judul'] ?? '-',
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: textTheme.titleSmall
-                        ?.copyWith(fontWeight: FontWeight.w600, fontSize: 16),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    'Rp ${buku['harga'] ?? '-'}',
-                    style: textTheme.bodyMedium?.copyWith(
+            // Book details
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(8, 8, 8, 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    // Book title
+                    Text(
+                      buku['judul'] ?? '-',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                        height: 1.2,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    // Price
+                    Text(
+                      'Rp ${buku['harga'] ?? '-'}',
+                      style: textTheme.bodyMedium?.copyWith(
                         color: colorBlack,
                         fontWeight: FontWeight.bold,
-                        fontSize: 15),
-                  ),
-                  const SizedBox(height: 2),
-                  Text('Terjual: ${buku['jumlah_terjual'] ?? '0'}',
-                      style: textTheme.bodySmall
-                          ?.copyWith(color: colorGrey, fontSize: 13)),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: List.generate(
-                        5,
-                        (i) => Icon(
-                              Icons.star,
-                              size: 20,
-                              color: i < rating ? Colors.amber : colorTextGrey,
-                            )),
-                  ),
-                  const SizedBox(height: 8),
-                ],
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ],
@@ -197,28 +191,33 @@ class _BookListTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final double rating =
-        double.tryParse(buku['rating']?.toString() ?? '0') ?? 0.0;
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: borderRadiusTheme,
-        boxShadow: [boxShadow],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.07),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+        border: Border.all(color: colorTextGrey.withOpacity(0.15)),
       ),
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         leading: ClipRRect(
           borderRadius: BorderRadius.circular(8),
-          child: Image.network(
-            buku['gambar1'] ?? '',
+          child: SizedBox(
             width: 50,
             height: 70,
-            fit: BoxFit.cover,
-            errorBuilder: (_, __, ___) => Container(
-              width: 50,
-              height: 70,
-              color: colorGrey.withOpacity(0.2),
-              child: Icon(Icons.broken_image, color: colorGrey),
+            child: Image.network(
+              buku['gambar1'] ?? '',
+              fit: BoxFit.contain,
+              errorBuilder: (_, __, ___) => Container(
+                color: colorGrey.withOpacity(0.2),
+                child: Icon(Icons.broken_image, color: colorGrey),
+              ),
             ),
           ),
         ),
@@ -226,22 +225,22 @@ class _BookListTile extends StatelessWidget {
           buku['judul'] ?? '-',
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
-          style: textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
+          style: textTheme.bodyMedium?.copyWith(
+            fontWeight: FontWeight.w600,
+            fontSize: 14,
+          ),
         ),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Rp ${buku['harga'] ?? '-'}',
-                style: const TextStyle(
-                    color: Colors.black, fontWeight: FontWeight.bold)),
-            Text('Terjual: ${buku['jumlah_terjual'] ?? '0'}',
-                style: textTheme.bodySmall),
-            Row(
-              children: List.generate(
-                  5,
-                  (i) => Icon(Icons.star,
-                      size: 16,
-                      color: i < rating ? Colors.amber : Colors.grey)),
+            const SizedBox(height: 4),
+            Text(
+              'Rp ${buku['harga'] ?? '-'}',
+              style: textTheme.bodyMedium?.copyWith(
+                color: colorBlack,
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+              ),
             ),
           ],
         ),

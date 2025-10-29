@@ -108,12 +108,16 @@ class CartPage extends StatelessWidget {
                     const SizedBox(height: 12),
                 itemBuilder: (context, index) {
                   final item = controller.cartItems[index];
-                  return CartItemCard(
-                    item: item,
-                    onRemove: () =>
-                        _showRemoveDialog(context, controller, item),
-                    onTap: () => _navigateToBookDetail(item),
-                  );
+                  return Obx(() => CartItemCard(
+                        item: item,
+                        isSelected:
+                            controller.selectedItems.contains(item.idBarang),
+                        onSelectionChanged: () =>
+                            controller.toggleItemSelection(item.idBarang),
+                        onRemove: () =>
+                            _showRemoveDialog(context, controller, item),
+                        onTap: () => _navigateToBookDetail(item),
+                      ));
                 },
               ),
             ),
@@ -136,21 +140,25 @@ class CartPage extends StatelessWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
-                        'Total:',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      Text(
-                        _formatCurrency(controller.totalPrice),
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: colorPrimary,
-                        ),
-                      ),
+                      Obx(() => Text(
+                            controller.selectedItemsCount > 0
+                                ? 'Total (${controller.selectedItemsCount} item):'
+                                : 'Total:',
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          )),
+                      Obx(() => Text(
+                            _formatCurrency(controller.selectedItemsCount > 0
+                                ? controller.selectedItemsTotalPrice
+                                : 0),
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: colorPrimary,
+                            ),
+                          )),
                     ],
                   ),
                   const SizedBox(height: 16),
@@ -158,7 +166,8 @@ class CartPage extends StatelessWidget {
                     width: double.infinity,
                     height: 48,
                     child: Obx(() => ElevatedButton(
-                          onPressed: controller.isCheckingOut.value
+                          onPressed: (controller.isCheckingOut.value ||
+                                  controller.selectedItemsCount == 0)
                               ? null
                               : () => _checkoutCart(controller),
                           style: ElevatedButton.styleFrom(
@@ -177,9 +186,11 @@ class CartPage extends StatelessWidget {
                                     color: Colors.white,
                                   ),
                                 )
-                              : const Text(
-                                  'Checkout',
-                                  style: TextStyle(
+                              : Text(
+                                  controller.selectedItemsCount == 0
+                                      ? 'Pilih Item untuk Checkout'
+                                      : 'Checkout (${controller.selectedItemsCount} item)',
+                                  style: const TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.bold,
                                   ),
@@ -271,12 +282,16 @@ class CartPage extends StatelessWidget {
 
 class CartItemCard extends StatelessWidget {
   final CartBook item;
+  final bool isSelected;
+  final VoidCallback onSelectionChanged;
   final VoidCallback onRemove;
   final VoidCallback onTap;
 
   const CartItemCard({
     super.key,
     required this.item,
+    required this.isSelected,
+    required this.onSelectionChanged,
     required this.onRemove,
     required this.onTap,
   });
@@ -286,94 +301,110 @@ class CartItemCard extends StatelessWidget {
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Row(
-            children: [
-              // Book cover
-              ClipRRect(
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          children: [
+            // Checkbox
+            Checkbox(
+              value: isSelected,
+              onChanged: (_) => onSelectionChanged(),
+              activeColor: colorPrimary,
+              checkColor: Colors.white,
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+            const SizedBox(width: 8),
+            // Item area (tappable for book detail)
+            Expanded(
+              child: InkWell(
+                onTap: onTap,
                 borderRadius: BorderRadius.circular(8),
-                child: Image.network(
-                  item.gambar1,
-                  width: 80,
-                  height: 100,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => Container(
-                    width: 80,
-                    height: 100,
-                    color: Colors.grey[200],
-                    child: const Icon(Icons.broken_image),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              // Book details
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                child: Row(
                   children: [
-                    Text(
-                      item.judul,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 4),
-                    if (item.diskon > 0) ...[
-                      Text(
-                        _formatCurrency(item.harga),
-                        style: const TextStyle(
-                          color: Colors.grey,
-                          decoration: TextDecoration.lineThrough,
-                          fontSize: 12,
+                    // Book cover
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: Image.network(
+                        item.gambar1,
+                        width: 80,
+                        height: 100,
+                        fit: BoxFit.contain,
+                        errorBuilder: (_, __, ___) => Container(
+                          width: 80,
+                          height: 100,
+                          color: Colors.grey[200],
+                          child: const Icon(Icons.broken_image),
                         ),
                       ),
-                      const SizedBox(height: 2),
-                    ],
-                    Text(
-                      _formatCurrency(item.hargaPromo),
-                      style: TextStyle(
-                        color: colorPrimary,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
                     ),
-                    if (item.diskon > 0) ...[
-                      const SizedBox(height: 4),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: Colors.red[50],
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          'Diskon ${item.diskon}%',
-                          style: TextStyle(
-                            color: Colors.red[700],
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
+                    const SizedBox(width: 12),
+                    // Book details
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            item.judul,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
                           ),
-                        ),
+                          const SizedBox(height: 4),
+                          if (item.diskon > 0) ...[
+                            Text(
+                              _formatCurrency(item.harga),
+                              style: const TextStyle(
+                                color: Colors.grey,
+                                decoration: TextDecoration.lineThrough,
+                                fontSize: 12,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                          ],
+                          Text(
+                            _formatCurrency(item.hargaPromo),
+                            style: TextStyle(
+                              color: colorPrimary,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
+                          if (item.diskon > 0) ...[
+                            const SizedBox(height: 4),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: Colors.red[50],
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                'Diskon ${item.diskon}%',
+                                style: TextStyle(
+                                  color: Colors.red[700],
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
-                    ],
+                    ),
                   ],
                 ),
               ),
-              // Remove button
-              IconButton(
-                onPressed: onRemove,
-                icon: const Icon(Icons.delete_outline, color: Colors.red),
-                tooltip: 'Hapus dari keranjang',
-              ),
-            ],
-          ),
+            ),
+            // Remove button
+            IconButton(
+              onPressed: onRemove,
+              icon: const Icon(Icons.delete_outline, color: Colors.red),
+              tooltip: 'Hapus dari keranjang',
+            ),
+          ],
         ),
       ),
     );

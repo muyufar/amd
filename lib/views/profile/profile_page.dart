@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:get/get.dart';
-import '../../models/user_model.dart';
 import '../../controllers/auth_controller.dart';
+import '../../widgets/bonus_claim_dialog.dart';
+import '../../utils/theme_utils.dart';
 
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
@@ -39,6 +40,29 @@ class ProfilePage extends StatelessWidget {
           Text(
             email,
             style: const TextStyle(color: Colors.grey),
+          ),
+          const SizedBox(height: 24),
+          // Klaim Bonus Button
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  Get.dialog(BonusClaimDialog());
+                },
+                icon: Icon(Icons.card_giftcard),
+                label: Text('Klaim Bonus'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: colorPrimary,
+                  foregroundColor: Colors.white,
+                  padding: EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+              ),
+            ),
           ),
           const SizedBox(height: 24),
           Expanded(
