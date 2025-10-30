@@ -11,7 +11,7 @@
     </queries>
 
     <application
-        android:label="AMD"
+        android:label="eBook AMD"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
         android:largeHeap="true">

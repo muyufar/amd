@@ -136,7 +136,8 @@ class _BonusClaimDialogState extends State<BonusClaimDialog>
               },
             ),
             SizedBox(height: 8),
-            GetBuilder<BonusController>(
+            GetX<BonusController>(
+              init: _bonusController ?? BonusController(),
               builder: (controller) {
                 if (controller.error.value.isNotEmpty) {
                   return Container(
@@ -174,7 +175,8 @@ class _BonusClaimDialogState extends State<BonusClaimDialog>
           },
           child: Text('Batal'),
         ),
-        GetBuilder<BonusController>(
+        GetX<BonusController>(
+          init: _bonusController ?? BonusController(),
           builder: (controller) => ElevatedButton(
             onPressed: controller.isClaiming.value ? null : _claimBonus,
             style: ElevatedButton.styleFrom(

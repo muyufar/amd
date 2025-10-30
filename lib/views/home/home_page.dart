@@ -539,7 +539,6 @@ class BookCard extends StatelessWidget {
                         height: 1.2,
                       ),
                     ),
-                    const SizedBox(height: 8),
                     // Price
                     Text(
                       'Rp ${buku['harga'] ?? '-'}',

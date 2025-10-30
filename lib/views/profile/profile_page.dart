@@ -49,7 +49,12 @@ class ProfilePage extends StatelessWidget {
               width: double.infinity,
               child: ElevatedButton.icon(
                 onPressed: () {
-                  Get.dialog(BonusClaimDialog());
+                  final token = GetStorage().read('token');
+                  if (token == null || (token is String && token.isEmpty)) {
+                    Get.toNamed('/login');
+                  } else {
+                    Get.dialog(BonusClaimDialog());
+                  }
                 },
                 icon: Icon(Icons.card_giftcard),
                 label: Text('Klaim Bonus'),
