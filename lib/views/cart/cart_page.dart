@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
@@ -5,26 +6,71 @@ import '../../controllers/cart_controller.dart';
 import '../../models/cart_model.dart';
 import '../../utils/theme_utils.dart';
 
-class CartPage extends StatelessWidget {
+class CartPage extends StatefulWidget {
   const CartPage({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final CartController controller = Get.put(CartController());
+  State<CartPage> createState() => _CartPageState();
+}
 
+class _CartPageState extends State<CartPage> with WidgetsBindingObserver {
+  late final CartController controller;
+  Timer? _autoRefreshTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    controller = Get.put(CartController());
+    WidgetsBinding.instance.addObserver(this);
+    _startAutoRefresh();
+  }
+
+  @override
+  void dispose() {
+    _stopAutoRefresh();
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    if (state == AppLifecycleState.resumed) {
+      // Auto refresh when app comes back to foreground
+      controller.fetchCartItems();
+      _startAutoRefresh();
+    } else if (state == AppLifecycleState.paused) {
+      // Stop timer when app goes to background
+      _stopAutoRefresh();
+    }
+  }
+
+  void _startAutoRefresh() {
+    _stopAutoRefresh(); // Stop any existing timer
+    // Auto refresh every 30 seconds
+    _autoRefreshTimer = Timer.periodic(
+      const Duration(seconds: 30),
+      (_) {
+        if (mounted && !controller.isLoading.value) {
+          controller.fetchCartItems();
+        }
+      },
+    );
+  }
+
+  void _stopAutoRefresh() {
+    _autoRefreshTimer?.cancel();
+    _autoRefreshTimer = null;
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Keranjang'),
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
         elevation: 0,
-        actions: [
-          IconButton(
-            onPressed: () => controller.fetchCartItems(),
-            icon: const Icon(Icons.refresh),
-            tooltip: 'Refresh',
-          ),
-        ],
       ),
       body: Obx(() {
         print(
@@ -101,24 +147,29 @@ class CartPage extends StatelessWidget {
         return Column(
           children: [
             Expanded(
-              child: ListView.separated(
-                padding: const EdgeInsets.all(16),
-                itemCount: controller.cartItems.length,
-                separatorBuilder: (context, index) =>
-                    const SizedBox(height: 12),
-                itemBuilder: (context, index) {
-                  final item = controller.cartItems[index];
-                  return Obx(() => CartItemCard(
-                        item: item,
-                        isSelected:
-                            controller.selectedItems.contains(item.idBarang),
-                        onSelectionChanged: () =>
-                            controller.toggleItemSelection(item.idBarang),
-                        onRemove: () =>
-                            _showRemoveDialog(context, controller, item),
-                        onTap: () => _navigateToBookDetail(item),
-                      ));
+              child: RefreshIndicator(
+                onRefresh: () async {
+                  await controller.fetchCartItems();
                 },
+                child: ListView.separated(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: controller.cartItems.length,
+                  separatorBuilder: (context, index) =>
+                      const SizedBox(height: 12),
+                  itemBuilder: (context, index) {
+                    final item = controller.cartItems[index];
+                    return Obx(() => CartItemCard(
+                          item: item,
+                          isSelected:
+                              controller.selectedItems.contains(item.idBarang),
+                          onSelectionChanged: () =>
+                              controller.toggleItemSelection(item.idBarang),
+                          onRemove: () =>
+                              _showRemoveDialog(context, controller, item),
+                          onTap: () => _navigateToBookDetail(item),
+                        ));
+                  },
+                ),
               ),
             ),
             // Bottom checkout section

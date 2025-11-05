@@ -108,21 +108,21 @@ class LoginPage extends StatelessWidget {
                       ),
                     )),
               const Spacer(),
-              Center(
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Text('Belum punya akun? '),
-                    GestureDetector(
-                      onTap: () => Get.toNamed('/register'),
-                      child: const Text('Daftar',
-                          style: TextStyle(
-                              color: Colors.blue, fontWeight: FontWeight.bold)),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
+              // Center(
+              //   child: Row(
+              //     mainAxisAlignment: MainAxisAlignment.center,
+              //     children: [
+              //       const Text('Belum punya akun? '),
+              //       GestureDetector(
+              //         onTap: () => Get.toNamed('/register'),
+              //         child: const Text('Daftar',
+              //             style: TextStyle(
+              //                 color: Colors.blue, fontWeight: FontWeight.bold)),
+              //       ),
+              //     ],
+              //   ),
+              // ),
+              // const SizedBox(height: 16),
             ],
           ),
         ),

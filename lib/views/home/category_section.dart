@@ -60,8 +60,8 @@ class CategorySection extends StatelessWidget {
                     ),
                     const SizedBox(height: 8),
                     ElevatedButton(
-                      onPressed: () => categoryController.fetchParentCategories(
-                          refresh: true),
+                      onPressed: () =>
+                          categoryController.fetchParentCategories(reset: true),
                       child: const Text('Coba Lagi'),
                     ),
                   ],

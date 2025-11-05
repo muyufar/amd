@@ -17,6 +17,9 @@ class EbookListPage extends StatefulWidget {
 class _EbookListPageState extends State<EbookListPage> {
   bool isGrid = true;
   late final HomeController controller;
+  final ScrollController _scrollController = ScrollController();
+  bool _isLoadingMore = false;
+  DateTime? _lastLoadMoreTime;
 
   @override
   void initState() {
@@ -26,13 +29,75 @@ class _EbookListPageState extends State<EbookListPage> {
         : Get.put(HomeController());
     if (widget.type == EbookListType.terbaru) {
       if (controller.bukuTerbaru.isEmpty) {
-        controller.fetchBukuTerbaru();
+        controller.fetchBukuTerbaru(reset: true);
       }
     } else {
       if (controller.bukuTerlaris.isEmpty) {
-        controller.fetchBukuTerlaris();
+        controller.fetchBukuTerlaris(reset: true);
       }
     }
+
+    // Add scroll listener for infinite scroll
+    _scrollController.addListener(_onScroll);
+  }
+
+  void _onScroll() {
+    if (!_scrollController.hasClients ||
+        _scrollController.position.maxScrollExtent <= 0) {
+      return;
+    }
+
+    // Check if scrolled near bottom (within 200 pixels)
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 200) {
+      _loadMoreIfNeeded();
+    }
+  }
+
+  void _loadMoreIfNeeded() async {
+    // Debounce: prevent multiple calls within 1 second
+    final now = DateTime.now();
+    if (_lastLoadMoreTime != null &&
+        now.difference(_lastLoadMoreTime!) < const Duration(seconds: 1)) {
+      return;
+    }
+
+    if (_isLoadingMore) return;
+
+    final hasMore = widget.type == EbookListType.terbaru
+        ? controller.hasMoreTerbaru.value
+        : controller.hasMoreTerlaris.value;
+    final isLoadingMore = widget.type == EbookListType.terbaru
+        ? controller.isLoadingMoreTerbaru.value
+        : controller.isLoadingMoreTerlaris.value;
+
+    if (!hasMore || isLoadingMore) return;
+
+    setState(() {
+      _isLoadingMore = true;
+      _lastLoadMoreTime = now;
+    });
+
+    try {
+      if (widget.type == EbookListType.terbaru) {
+        await controller.loadMoreBukuTerbaru();
+      } else {
+        await controller.loadMoreBukuTerlaris();
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoadingMore = false;
+        });
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
+    super.dispose();
   }
 
   @override
@@ -69,33 +134,91 @@ class _EbookListPageState extends State<EbookListPage> {
         } else if (list.isEmpty) {
           return const Center(child: Text('Tidak ada data'));
         }
+        final isLoadingMore = widget.type == EbookListType.terbaru
+            ? controller.isLoadingMoreTerbaru.value
+            : controller.isLoadingMoreTerlaris.value;
+        final hasMore = widget.type == EbookListType.terbaru
+            ? controller.hasMoreTerbaru.value
+            : controller.hasMoreTerlaris.value;
+
         if (isGrid) {
-          return GridView.builder(
-            padding: const EdgeInsets.all(16),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              mainAxisSpacing: 16,
-              crossAxisSpacing: 16,
-              childAspectRatio: 0.62,
-            ),
-            itemCount: list.length,
-            itemBuilder: (context, index) {
-              final buku = list[index];
-              return _BookCard(buku: buku);
+          return RefreshIndicator(
+            onRefresh: () async {
+              if (widget.type == EbookListType.terbaru) {
+                controller.fetchBukuTerbaru(reset: true);
+                // Wait for loading to complete
+                while (controller.isLoadingTerbaru.value) {
+                  await Future.delayed(const Duration(milliseconds: 100));
+                }
+              } else {
+                controller.fetchBukuTerlaris(reset: true);
+                // Wait for loading to complete
+                while (controller.isLoadingTerlaris.value) {
+                  await Future.delayed(const Duration(milliseconds: 100));
+                }
+              }
             },
+            child: GridView.builder(
+              controller: _scrollController,
+              padding: const EdgeInsets.all(16),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                mainAxisSpacing: 16,
+                crossAxisSpacing: 16,
+                childAspectRatio: 0.62,
+              ),
+              itemCount: list.length + (hasMore && isLoadingMore ? 1 : 0),
+              itemBuilder: (context, index) {
+                if (index == list.length) {
+                  return _buildLoadMoreIndicator(isLoadingMore);
+                }
+                final buku = list[index];
+                return _BookCard(buku: buku);
+              },
+            ),
           );
         } else {
-          return ListView.separated(
-            padding: const EdgeInsets.all(16),
-            itemCount: list.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 12),
-            itemBuilder: (context, index) {
-              final buku = list[index];
-              return _BookListTile(buku: buku);
+          return RefreshIndicator(
+            onRefresh: () async {
+              if (widget.type == EbookListType.terbaru) {
+                controller.fetchBukuTerbaru(reset: true);
+                // Wait for loading to complete
+                while (controller.isLoadingTerbaru.value) {
+                  await Future.delayed(const Duration(milliseconds: 100));
+                }
+              } else {
+                controller.fetchBukuTerlaris(reset: true);
+                // Wait for loading to complete
+                while (controller.isLoadingTerlaris.value) {
+                  await Future.delayed(const Duration(milliseconds: 100));
+                }
+              }
             },
+            child: ListView.separated(
+              controller: _scrollController,
+              padding: const EdgeInsets.all(16),
+              itemCount: list.length + (hasMore && isLoadingMore ? 1 : 0),
+              separatorBuilder: (_, __) => const SizedBox(height: 12),
+              itemBuilder: (context, index) {
+                if (index == list.length) {
+                  return _buildLoadMoreIndicator(isLoadingMore);
+                }
+                final buku = list[index];
+                return _BookListTile(buku: buku);
+              },
+            ),
           );
         }
       }),
+    );
+  }
+
+  Widget _buildLoadMoreIndicator(bool isLoadingMore) {
+    return const Padding(
+      padding: EdgeInsets.all(16.0),
+      child: Center(
+        child: CircularProgressIndicator(),
+      ),
     );
   }
 }
@@ -107,6 +230,9 @@ class _BookCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
+      width: 160,
+      height: 280, // Fixed height to prevent overflow
+      margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: borderRadiusTheme,
@@ -153,18 +279,28 @@ class _BookCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
+                    Text(
+                      buku['penulis'] ?? '-',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w300,
+                        fontSize: 11,
+                        height: 1.2,
+                      ),
+                    ),
                     // Book title
                     Text(
                       buku['judul'] ?? '-',
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w400,
                         fontSize: 14,
                         height: 1.2,
                       ),
                     ),
-                    const SizedBox(height: 8),
+
                     // Price
                     Text(
                       'Rp ${buku['harga'] ?? '-'}',

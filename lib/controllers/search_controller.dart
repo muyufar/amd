@@ -94,8 +94,9 @@ class SearchController extends GetxController {
       );
 
       if (response['status'] == true) {
-        _searchResults.value =
+        final List<Map<String, dynamic>> fetched =
             List<Map<String, dynamic>>.from(response['data']['list'] ?? []);
+        _searchResults.value = _dedupeList(fetched, existingKeys: {});
         _totalResults.value = response['data']['total'] ?? 0;
       } else {
         _errorMessage.value =
@@ -109,6 +110,11 @@ class SearchController extends GetxController {
       _totalResults.value = 0;
     } finally {
       _isLoading.value = false;
+      // Load filters automatically after search completes
+      // This ensures filters are always available when search results are shown
+      if (_keyword.value.isNotEmpty) {
+        loadFilters();
+      }
     }
   }
 
@@ -135,12 +141,21 @@ class SearchController extends GetxController {
       );
 
       if (response['status'] == true) {
-        final newResults =
+        final List<Map<String, dynamic>> newResults =
             List<Map<String, dynamic>>.from(response['data']['list'] ?? []);
         if (newResults.isEmpty) {
           _hasMoreData.value = false;
         } else {
-          _searchResults.addAll(newResults);
+          // Build existing keys set to avoid duplicates when appending
+          final Set<String> existingKeys = _buildKeySet(_searchResults);
+          final List<Map<String, dynamic>> uniqueNew =
+              _dedupeList(newResults, existingKeys: existingKeys);
+          if (uniqueNew.isEmpty && newResults.isNotEmpty) {
+            // All results are duplicates; allow further loads but don't add duplicates
+            // Do not change _hasMoreData here; next page may have new items
+          } else {
+            _searchResults.addAll(uniqueNew);
+          }
         }
       } else {
         _hasMoreData.value = false;
@@ -204,5 +219,38 @@ class SearchController extends GetxController {
     _kategoriOptions.clear();
     _penulisOptions.clear();
     _penerbitOptions.clear();
+  }
+
+  // Helpers: build unique keys and dedupe lists by a stable key
+  Set<String> _buildKeySet(List<Map<String, dynamic>> list) {
+    return list
+        .map((e) =>
+            (e['slug_barang'] ?? e['id'] ?? e['slug'] ?? e['judul'] ?? '')
+                .toString())
+        .toSet();
+  }
+
+  List<Map<String, dynamic>> _dedupeList(List<Map<String, dynamic>> list,
+      {required Set<String> existingKeys}) {
+    final List<Map<String, dynamic>> result = [];
+    final Set<String> keys = {...existingKeys};
+    for (final item in list) {
+      final String key = (item['slug_barang'] ??
+              item['id'] ??
+              item['slug'] ??
+              item['judul'] ??
+              '')
+          .toString();
+      if (key.isEmpty) {
+        // If no stable key, accept the item to avoid dropping data unexpectedly
+        result.add(item);
+        continue;
+      }
+      if (!keys.contains(key)) {
+        keys.add(key);
+        result.add(item);
+      }
+    }
+    return result;
   }
 }

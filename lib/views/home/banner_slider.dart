@@ -140,55 +140,86 @@ class _BannerSliderState extends State<BannerSlider> {
 
     return SizedBox(
       height: 200,
-      child: PageView.builder(
-        controller: _pageController,
-        itemCount: banners.length,
-        onPageChanged: _onPageChanged,
-        itemBuilder: (context, index) {
-          final banner = banners[index];
-          return GestureDetector(
-            onTap: () {
-              if (banner.link != null && banner.link!.isNotEmpty) {
-                // TODO: Handle banner link tap
-                print('Banner tapped: ${banner.link}');
-              }
+      child: Stack(
+        alignment: Alignment.bottomCenter,
+        children: [
+          PageView.builder(
+            controller: _pageController,
+            itemCount: banners.length,
+            onPageChanged: _onPageChanged,
+            itemBuilder: (context, index) {
+              final banner = banners[index];
+              return GestureDetector(
+                onTap: () {
+                  if (banner.link != null && banner.link!.isNotEmpty) {
+                    // TODO: Handle banner link tap
+                    print('Banner tapped: ${banner.link}');
+                  }
+                },
+                child: Container(
+                  width: double.infinity,
+                  height: 200,
+                  child: widget.square
+                      ? Image.network(
+                          banner.image,
+                          fit: BoxFit.cover,
+                          width: double.infinity,
+                          height: double.infinity,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Container(
+                              color: Colors.grey[200],
+                              child: Icon(Icons.image_not_supported,
+                                  color: Colors.grey[400]),
+                            );
+                          },
+                        )
+                      : ClipRRect(
+                          borderRadius: BorderRadius.circular(0),
+                          child: Image.network(
+                            banner.image,
+                            fit: BoxFit.cover,
+                            width: double.infinity,
+                            height: double.infinity,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Container(
+                                color: Colors.grey[200],
+                                child: Icon(Icons.image_not_supported,
+                                    color: Colors.grey[400]),
+                              );
+                            },
+                          ),
+                        ),
+                ),
+              );
             },
-            child: Container(
-              width: double.infinity,
-              height: 200,
-              child: widget.square
-                  ? Image.network(
-                      banner.image,
-                      fit: BoxFit.cover,
-                      width: double.infinity,
-                      height: double.infinity,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Container(
-                          color: Colors.grey[200],
-                          child: Icon(Icons.image_not_supported,
-                              color: Colors.grey[400]),
-                        );
-                      },
-                    )
-                  : ClipRRect(
-                      borderRadius: BorderRadius.circular(0),
-                      child: Image.network(
-                        banner.image,
-                        fit: BoxFit.cover,
-                        width: double.infinity,
-                        height: double.infinity,
-                        errorBuilder: (context, error, stackTrace) {
-                          return Container(
-                            color: Colors.grey[200],
-                            child: Icon(Icons.image_not_supported,
-                                color: Colors.grey[400]),
-                          );
-                        },
+          ),
+          if (banners.length > 1)
+            Positioned(
+              bottom: 8,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.25),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  children: List.generate(banners.length, (index) {
+                    final bool isActive = currentIndex == index;
+                    return AnimatedContainer(
+                      duration: const Duration(milliseconds: 250),
+                      margin: const EdgeInsets.symmetric(horizontal: 3),
+                      width: isActive ? 16 : 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: isActive ? Colors.white : Colors.white70,
+                        borderRadius: BorderRadius.circular(8),
                       ),
-                    ),
+                    );
+                  }),
+                ),
+              ),
             ),
-          );
-        },
+        ],
       ),
     );
   }

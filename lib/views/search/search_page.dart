@@ -293,12 +293,27 @@ class SearchPage extends StatelessWidget {
     );
   }
 
+  // Helper function to parse int from String or int
+  int _parseInt(dynamic value) {
+    if (value == null) return 0;
+    if (value is int) return value;
+    if (value is String) {
+      // Remove dots (thousand separators) and try to parse
+      final cleaned = value.replaceAll('.', '').trim();
+      return int.tryParse(cleaned) ?? 0;
+    }
+    // Try to parse as string first
+    final str = value.toString();
+    final cleaned = str.replaceAll('.', '').trim();
+    return int.tryParse(cleaned) ?? 0;
+  }
+
   Widget _buildBookCard(Map<String, dynamic> book) {
     final double rating =
         double.tryParse(book['rating']?.toString() ?? '0') ?? 0.0;
-    final int harga = book['harga'] ?? 0;
-    final int diskon = book['diskon'] ?? 0;
-    final int diskonPrice = book['diskon_price'] ?? 0;
+    final int harga = _parseInt(book['harga']);
+    final int diskon = _parseInt(book['diskon']);
+    final int diskonPrice = _parseInt(book['diskon_price']);
     final bool hasDiscount = diskon > 0 && diskonPrice > 0;
 
     return Container(
@@ -380,7 +395,7 @@ class SearchPage extends StatelessWidget {
                                 )),
                         const SizedBox(width: 8),
                         Text(
-                          '(${book['jumlah_rating'] ?? 0})',
+                          '(${_parseInt(book['jumlah_rating'])})',
                           style: textTheme.bodySmall?.copyWith(
                             color: colorGrey,
                           ),
@@ -420,7 +435,7 @@ class SearchPage extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Terjual: ${book['jumlah_terjual'] ?? 0}',
+                      'Terjual: ${_parseInt(book['jumlah_terjual'])}',
                       style: textTheme.bodySmall?.copyWith(
                         color: colorGrey,
                       ),

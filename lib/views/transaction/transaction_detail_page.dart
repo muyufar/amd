@@ -326,10 +326,21 @@ class TransactionDetailPage extends StatelessWidget {
   Widget _buildActionButtons(Map<String, dynamic> transaksi) {
     final paymentRedirect = transaksi['payment_redirect'];
     final statusTransaksi = transaksi['status_transaksi'];
+    final statusTextRaw = transaksi['status'] ?? transaksi['status_text'];
+    final statusText = statusTextRaw?.toString()?.toLowerCase();
 
     print('🔍 [TRANSACTION DETAIL] Building action buttons:');
     print('🔍 [TRANSACTION DETAIL] paymentRedirect: $paymentRedirect');
     print('🔍 [TRANSACTION DETAIL] statusTransaksi: $statusTransaksi');
+    print('🔍 [TRANSACTION DETAIL] statusText: $statusText');
+
+    // Only show buttons for Belum Dibayar. For any other status, show nothing.
+    final bool isUnpaid = statusTransaksi == '1' ||
+        statusTransaksi == 1 ||
+        _getStatusText(statusTransaksi?.toString()) == 'Belum Dibayar' ||
+        (statusText != null && statusText.contains('belum'));
+
+    if (!isUnpaid) return const SizedBox.shrink();
 
     return Column(
       children: [
@@ -403,7 +414,7 @@ class TransactionDetailPage extends StatelessWidget {
             width: double.infinity,
             height: 48,
             child: ElevatedButton.icon(
-              onPressed: () => _handleCancelPayment(transaksi['id_transaksi']),
+              onPressed: () => _handleCancelPayment(transaksi['id_invoice']),
               icon: const Icon(Icons.cancel, size: 20),
               label: const Text('Batal Bayar'),
               style: ElevatedButton.styleFrom(
@@ -874,14 +885,14 @@ class TransactionDetailPage extends StatelessWidget {
     switch (status) {
       case '1':
         return 'Belum Dibayar';
-      case '2':
+      case '3':
         return 'Sudah Dibayar';
       case '3':
         return 'Selesai';
       case '4':
-        return 'Dibatalkan';
-      case '5':
         return 'Kadaluwarsa';
+      case '5':
+        return 'Dibatalkan';
       default:
         return 'Tidak Diketahui';
     }

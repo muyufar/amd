@@ -1,6 +1,7 @@
 class TransactionHistoryModel {
   final bool isAllReview;
   final String idTransaksi;
+  final String idInvoice;
   final String statusTransaksi;
   final String tanggalTransaksi;
   final int totalHargaFinal;
@@ -11,6 +12,7 @@ class TransactionHistoryModel {
   TransactionHistoryModel({
     required this.isAllReview,
     required this.idTransaksi,
+    required this.idInvoice,
     required this.statusTransaksi,
     required this.tanggalTransaksi,
     required this.totalHargaFinal,
@@ -23,6 +25,7 @@ class TransactionHistoryModel {
     return TransactionHistoryModel(
       isAllReview: json['isAllReview'] ?? false,
       idTransaksi: json['id_transaksi'] ?? '',
+      idInvoice: json['id_invoice'] ?? '',
       statusTransaksi: json['status_transaksi'] ?? '',
       tanggalTransaksi: json['tanggal_transaksi'] ?? '',
       totalHargaFinal: json['total_harga_final'] ?? 0,

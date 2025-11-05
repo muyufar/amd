@@ -42,7 +42,7 @@
             <category android:name="android.intent.category.BROWSABLE"/>
         <data
             android:scheme="https"
-            android:host="andidigital.andipublisher.com"
+            android:host="dashboard.ebookamd.com"
             android:pathPrefix="/api/dev/ebook"/>
 </intent-filter>
         </activity>

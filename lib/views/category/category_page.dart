@@ -14,6 +14,8 @@ class _CategoryPageState extends State<CategoryPage> {
   late ScrollController _scrollController;
   late CategoryController controller;
   bool _showScrollToTop = false;
+  bool _isLoadingMore = false;
+  DateTime? _lastLoadMoreTime;
 
   @override
   void initState() {
@@ -29,7 +31,7 @@ class _CategoryPageState extends State<CategoryPage> {
       controller = Get.put(CategoryController());
     }
 
-    // Add scroll listener for better control
+    // Add scroll listener for infinite scroll and scroll to top button
     _scrollController.addListener(() {
       // Show/hide scroll to top button
       if (_scrollController.position.pixels > 200) {
@@ -46,42 +48,56 @@ class _CategoryPageState extends State<CategoryPage> {
         }
       }
 
-      // Debug scroll position
-      if (_scrollController.position.pixels > 0) {
-        print(
-            '🔄 [CATEGORY PAGE] Scroll position: ${_scrollController.position.pixels}');
-        print(
-            '🔄 [CATEGORY PAGE] Max scroll extent: ${_scrollController.position.maxScrollExtent}');
-        print(
-            '🔄 [CATEGORY PAGE] Threshold: ${_scrollController.position.maxScrollExtent - 100}');
+      // Infinite scroll - load more when near bottom
+      // Only check if scroll position is valid and not at the very beginning
+      if (!_scrollController.hasClients ||
+          _scrollController.position.maxScrollExtent <= 0) {
+        return;
       }
 
-      // Scroll to bottom for load more
-      if (_scrollController.position.pixels >=
-          _scrollController.position.maxScrollExtent - 200) {
-        print('🔄 [CATEGORY PAGE] Scroll threshold reached!');
-        print('🔄 [CATEGORY PAGE] Is loading: ${controller.isLoading.value}');
-        print(
-            '🔄 [CATEGORY PAGE] Has more data: ${controller.hasMoreData.value}');
-        print(
-            '🔄 [CATEGORY PAGE] Is showing child: ${controller.isShowingChildCategories}');
+      final threshold = _scrollController.position.maxScrollExtent - 200;
+      if (_scrollController.position.pixels >= threshold) {
+        // Prevent multiple calls with debounce (1000ms - increased)
+        final now = DateTime.now();
+        if (_lastLoadMoreTime != null &&
+            now.difference(_lastLoadMoreTime!).inMilliseconds < 1000) {
+          return;
+        }
+
+        // Prevent multiple simultaneous load more calls
+        if (_isLoadingMore) {
+          return;
+        }
 
         if (controller.isShowingChildCategories) {
           // Load more books when showing child categories
           if (!controller.isLoadingBooks.value &&
-              controller.hasMoreBooks.value) {
-            print('🔄 [CATEGORY PAGE] Triggering load more books...');
-            controller.loadMoreBooks();
+              controller.hasMoreBooks.value &&
+              !_isLoadingMore) {
+            _isLoadingMore = true;
+            _lastLoadMoreTime = now;
+            print('🔄 [CATEGORY PAGE] Triggering loadMoreBooks');
+            controller.loadMoreBooks().then((_) {
+              _isLoadingMore = false;
+            }).catchError((e) {
+              print('🔴 [CATEGORY PAGE] Error loading more books: $e');
+              _isLoadingMore = false;
+            });
           }
         } else {
           // Load more parent categories
-          if (!controller.isLoading.value && controller.hasMoreData.value) {
-            print('🔄 [CATEGORY PAGE] Triggering load more...');
-            print(
-                '🔄 [CATEGORY PAGE] Current offset: ${controller.currentOffset.value}');
-            controller.loadMoreParentCategories();
-          } else {
-            print('🔄 [CATEGORY PAGE] Load more conditions not met');
+          if (!controller.isLoading.value &&
+              controller.hasMoreData.value &&
+              !_isLoadingMore) {
+            _isLoadingMore = true;
+            _lastLoadMoreTime = now;
+            print('🔄 [CATEGORY PAGE] Triggering loadMoreParentCategories');
+            controller.loadMoreParentCategories().then((_) {
+              _isLoadingMore = false;
+            }).catchError((e) {
+              print('🔴 [CATEGORY PAGE] Error loading more categories: $e');
+              _isLoadingMore = false;
+            });
           }
         }
       }
@@ -104,7 +120,19 @@ class _CategoryPageState extends State<CategoryPage> {
         leading: Obx(() => controller.isShowingChildCategories
             ? IconButton(
                 icon: const Icon(Icons.arrow_back),
-                onPressed: () => controller.resetToParentCategories(),
+                onPressed: () {
+                  controller.resetToParentCategories();
+                  // Scroll to top
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (_scrollController.hasClients) {
+                      _scrollController.animateTo(
+                        0,
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeOut,
+                      );
+                    }
+                  });
+                },
               )
             : IconButton(
                 icon: const Icon(Icons.arrow_back),
@@ -144,7 +172,7 @@ class _CategoryPageState extends State<CategoryPage> {
                 const SizedBox(height: 16),
                 ElevatedButton(
                   onPressed: () =>
-                      controller.fetchParentCategories(refresh: true),
+                      controller.fetchParentCategories(reset: true),
                   child: const Text('Coba Lagi'),
                 ),
               ],
@@ -199,20 +227,18 @@ class _CategoryPageState extends State<CategoryPage> {
       }
 
       return RefreshIndicator(
-        onRefresh: () => controller.fetchParentCategories(refresh: true),
-        child: NotificationListener<ScrollNotification>(
-          onNotification: (ScrollNotification scrollInfo) {
-            return false;
+        onRefresh: () => controller.fetchParentCategories(reset: true),
+        child: ListView.builder(
+          controller: _scrollController,
+          padding: const EdgeInsets.all(16),
+          itemCount: categories.length + (controller.hasMoreData.value ? 1 : 0),
+          itemBuilder: (context, index) {
+            if (index == categories.length) {
+              return _buildLoadMoreParentCategories();
+            }
+            final category = categories[index];
+            return _buildCategoryItem(category);
           },
-          child: ListView.builder(
-            controller: _scrollController,
-            padding: const EdgeInsets.all(16),
-            itemCount: categories.length,
-            itemBuilder: (context, index) {
-              final category = categories[index];
-              return _buildCategoryItem(category);
-            },
-          ),
         ),
       );
     });
@@ -231,6 +257,7 @@ class _CategoryPageState extends State<CategoryPage> {
         onRefresh: () => controller.fetchChildCategories(
           controller.selectedParentId.value,
           controller.selectedParentName.value,
+          reset: true,
         ),
         child: CustomScrollView(
           controller: _scrollController,
@@ -344,6 +371,7 @@ class _CategoryPageState extends State<CategoryPage> {
             controller.fetchChildCategories(
               category['id_kategori'],
               category['nama_kategori'],
+              reset: true,
             );
           } else {
             // Navigate to books in this category
@@ -565,6 +593,33 @@ class _CategoryPageState extends State<CategoryPage> {
         ),
       ),
     );
+  }
+
+  Widget _buildLoadMoreParentCategories() {
+    return Obx(() {
+      if (controller.isLoading.value) {
+        return const Padding(
+          padding: EdgeInsets.all(16),
+          child: Center(
+            child: CircularProgressIndicator(),
+          ),
+        );
+      }
+
+      if (!controller.hasMoreData.value) {
+        return const Padding(
+          padding: EdgeInsets.all(16),
+          child: Center(
+            child: Text(
+              'Semua kategori telah dimuat',
+              style: TextStyle(color: Colors.grey),
+            ),
+          ),
+        );
+      }
+
+      return const SizedBox.shrink();
+    });
   }
 
   Widget _buildLoadMoreBooks() {

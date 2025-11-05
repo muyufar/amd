@@ -16,37 +16,54 @@ class CategoryController extends GetxController {
   var selectedParentName = ''.obs;
   var isLoadingBooks = false.obs;
   var hasMoreBooks = true.obs;
-  var currentBookOffset = 0.obs;
 
-  // Pagination
-  var currentOffset = 0.obs;
+  // Pagination for parent categories
+  var currentPageParent = 1.obs;
   var hasMoreData = true.obs;
   var totalParentCategories = 0.obs;
+  final int limitPerPageParent = 10;
+  
+  // Pagination for books
+  var currentPageBooks = 1.obs;
   var totalChildCategories = 0.obs;
+  final int limitPerPageBooks = 20;
 
   @override
   void onInit() {
     super.onInit();
-    fetchParentCategories();
+    fetchParentCategories(reset: true);
   }
 
   // Fetch Parent Categories
-  Future<void> fetchParentCategories({bool refresh = false}) async {
-    if (refresh) {
-      currentOffset.value = 0;
+  Future<void> fetchParentCategories({bool reset = false}) async {
+    if (reset) {
+      currentPageParent.value = 1;
       hasMoreData.value = true;
       parentCategories.clear();
     }
 
-    if (!hasMoreData.value && !refresh) return;
+    if (!hasMoreData.value && !reset) {
+      print('🔄 [CATEGORY CONTROLLER] fetchParentCategories skipped - no more data');
+      return;
+    }
+
+    // Set loading flag IMMEDIATELY to prevent multiple calls
+    if (isLoading.value) {
+      print('🔄 [CATEGORY CONTROLLER] fetchParentCategories skipped - already loading');
+      return;
+    }
 
     isLoading.value = true;
     error.value = '';
 
     try {
+      final offset = (currentPageParent.value - 1) * limitPerPageParent;
+      print(
+          '🔄 [CATEGORY CONTROLLER] Fetching page: ${currentPageParent.value}, offset: $offset');
+      
       final response = await _categoryService.getParentCategories(
-        offset: currentOffset.value,
-        limit: 10,
+        offset: offset,
+        limit: limitPerPageParent,
       );
 
       if (response['status'] == true && response['data'] != null) {
@@ -58,62 +75,80 @@ class CategoryController extends GetxController {
         print(
             '🔄 [CATEGORY CONTROLLER] API total: ${response['data']['total']}');
         print(
-            '🔄 [CATEGORY CONTROLLER] Current offset: ${currentOffset.value}');
+            '🔄 [CATEGORY CONTROLLER] Current list length before: ${parentCategories.length}');
 
-        if (refresh) {
+        if (reset) {
           parentCategories.value = newCategories;
         } else {
-          parentCategories.addAll(newCategories);
+          // Check for duplicates before adding
+          final existingIds = parentCategories.map((c) => c['id_kategori']).toSet();
+          final uniqueNewCategories = newCategories.where((c) => 
+            !existingIds.contains(c['id_kategori'])
+          ).toList();
+          parentCategories.addAll(uniqueNewCategories);
+          print(
+              '🔄 [CATEGORY CONTROLLER] Added ${uniqueNewCategories.length} unique categories (${newCategories.length - uniqueNewCategories.length} duplicates skipped)');
         }
 
         totalParentCategories.value = response['data']['total'] ?? 0;
 
         // Check if there are more data
-        // If we received fewer items than requested, we've reached the end
-        hasMoreData.value = newCategories.length >= 10;
+        hasMoreData.value = newCategories.length >= limitPerPageParent;
 
         print(
             '🔄 [CATEGORY CONTROLLER] Total categories: ${totalParentCategories.value}');
         print(
             '🔄 [CATEGORY CONTROLLER] Current categories: ${parentCategories.length}');
         print('🔄 [CATEGORY CONTROLLER] Has more data: ${hasMoreData.value}');
-
-        currentOffset.value += 1;
       } else {
         throw Exception(response['message'] ?? 'Failed to fetch categories');
       }
     } catch (e) {
       error.value = e.toString();
       print('🔴 [CATEGORY CONTROLLER] Error: $e');
+      // Rollback page increment on error (only if not reset)
+      if (!reset && currentPageParent.value > 1) {
+        currentPageParent.value--;
+      }
     } finally {
       isLoading.value = false;
     }
   }
 
   // Fetch Child Categories and Books
-  Future<void> fetchChildCategories(String parentId, String parentName) async {
+  Future<void> fetchChildCategories(String parentId, String parentName, {bool reset = false}) async {
+    if (reset) {
+      currentPageBooks.value = 1;
+      hasMoreBooks.value = true;
+    }
+    
     selectedParentId.value = parentId;
     selectedParentName.value = parentName;
 
     isLoading.value = true;
     error.value = '';
-    childCategories.clear();
-    categoryBooks.clear();
+    
+    if (reset) {
+      childCategories.clear();
+      categoryBooks.clear();
+    }
 
     try {
+      final offset = (currentPageBooks.value - 1) * limitPerPageBooks;
+      
       // Fetch child categories and books simultaneously
       final futures = await Future.wait([
         _categoryService.getChildCategories(
             idParent: parentId, offset: 0, limit: 10),
         _categoryBooksService.getBooksByCategory(
-            idKategori: parentId, offset: 0, limit: 20),
+            idKategori: parentId, offset: offset, limit: limitPerPageBooks),
       ]);
 
       final childResponse = futures[0];
       final booksResponse = futures[1];
 
-      // Handle child categories
-      if (childResponse['code'] == 200 && childResponse['content'] != null) {
+      // Handle child categories (only fetch once, not paginated)
+      if (reset && childResponse['code'] == 200 && childResponse['content'] != null) {
         childCategories.value = List<Map<String, dynamic>>.from(
             childResponse['content']['list'] ?? []);
         totalChildCategories.value = childResponse['content']['total'] ?? 0;
@@ -121,11 +156,22 @@ class CategoryController extends GetxController {
 
       // Handle books
       if (booksResponse['status'] == true && booksResponse['data'] != null) {
-        categoryBooks.value = List<Map<String, dynamic>>.from(
+        final newBooks = List<Map<String, dynamic>>.from(
             booksResponse['data']['value'] ?? []);
-        hasMoreBooks.value =
-            (booksResponse['data']['value']?.length ?? 0) >= 20;
-        currentBookOffset.value = 1;
+        
+        if (reset) {
+          categoryBooks.value = newBooks;
+        } else {
+          // Check for duplicates before adding
+          final existingSlugs = categoryBooks.map((b) => b['slug_barang']).toSet();
+          final uniqueNewBooks = newBooks.where((b) => 
+            !existingSlugs.contains(b['slug_barang'])
+          ).toList();
+          categoryBooks.addAll(uniqueNewBooks);
+          print(
+              '🔄 [CATEGORY CONTROLLER] Added ${uniqueNewBooks.length} unique books (${newBooks.length - uniqueNewBooks.length} duplicates skipped)');
+        }
+        hasMoreBooks.value = newBooks.length >= limitPerPageBooks;
       }
 
       print(
@@ -139,48 +185,59 @@ class CategoryController extends GetxController {
     }
   }
 
-  // Load more parent categories
+  // Load more parent categories (for infinite scroll)
   Future<void> loadMoreParentCategories() async {
-    print('🔄 [CATEGORY CONTROLLER] loadMoreParentCategories called');
-    print('🔄 [CATEGORY CONTROLLER] isLoading: ${isLoading.value}');
-    print('🔄 [CATEGORY CONTROLLER] hasMoreData: ${hasMoreData.value}');
-    print('🔄 [CATEGORY CONTROLLER] currentOffset: ${currentOffset.value}');
-
-    if (!isLoading.value && hasMoreData.value) {
-      print('🔄 [CATEGORY CONTROLLER] Calling fetchParentCategories...');
-      await fetchParentCategories();
-    } else {
-      print('🔄 [CATEGORY CONTROLLER] Skipping load more - conditions not met');
+    // Prevent multiple simultaneous calls
+    if (isLoading.value || !hasMoreData.value) {
+      print('🔄 [CATEGORY CONTROLLER] loadMoreParentCategories skipped - isLoading: ${isLoading.value}, hasMoreData: ${hasMoreData.value}');
+      return;
     }
+
+    // Increment page BEFORE fetch to prevent duplicate calls
+    currentPageParent.value++;
+    print('🔄 [CATEGORY CONTROLLER] loadMoreParentCategories - page incremented to: ${currentPageParent.value}');
+    await fetchParentCategories();
   }
 
-  // Reset to parent categories
-  // Load more books
+  // Load more books (for infinite scroll)
   Future<void> loadMoreBooks() async {
-    if (!isLoadingBooks.value &&
-        hasMoreBooks.value &&
-        selectedParentId.value.isNotEmpty) {
-      isLoadingBooks.value = true;
+    if (isLoadingBooks.value || !hasMoreBooks.value || selectedParentId.value.isEmpty) {
+      return;
+    }
 
-      try {
-        final response = await _categoryBooksService.getBooksByCategory(
-          idKategori: selectedParentId.value,
-          offset: currentBookOffset.value,
-          limit: 20,
-        );
+    isLoadingBooks.value = true;
 
-        if (response['status'] == true && response['data'] != null) {
-          final newBooks =
-              List<Map<String, dynamic>>.from(response['data']['value'] ?? []);
-          categoryBooks.addAll(newBooks);
-          hasMoreBooks.value = newBooks.length >= 20;
-          currentBookOffset.value += 1;
-        }
-      } catch (e) {
-        print('🔴 [CATEGORY CONTROLLER] Error loading more books: $e');
-      } finally {
-        isLoadingBooks.value = false;
+    try {
+      currentPageBooks.value++;
+      final offset = (currentPageBooks.value - 1) * limitPerPageBooks;
+      
+      final response = await _categoryBooksService.getBooksByCategory(
+        idKategori: selectedParentId.value,
+        offset: offset,
+        limit: limitPerPageBooks,
+      );
+
+      if (response['status'] == true && response['data'] != null) {
+        final newBooks =
+            List<Map<String, dynamic>>.from(response['data']['value'] ?? []);
+        
+        // Check for duplicates before adding
+        final existingSlugs = categoryBooks.map((b) => b['slug_barang']).toSet();
+        final uniqueNewBooks = newBooks.where((b) => 
+          !existingSlugs.contains(b['slug_barang'])
+        ).toList();
+        
+        categoryBooks.addAll(uniqueNewBooks);
+        hasMoreBooks.value = newBooks.length >= limitPerPageBooks;
+        
+        print(
+            '🔄 [CATEGORY CONTROLLER] Added ${uniqueNewBooks.length} unique books (${newBooks.length - uniqueNewBooks.length} duplicates skipped)');
       }
+    } catch (e) {
+      print('🔴 [CATEGORY CONTROLLER] Error loading more books: $e');
+      currentPageBooks.value--; // Rollback on error
+    } finally {
+      isLoadingBooks.value = false;
     }
   }
 
@@ -190,7 +247,7 @@ class CategoryController extends GetxController {
     childCategories.clear();
     categoryBooks.clear();
     hasMoreBooks.value = true;
-    currentBookOffset.value = 0;
+    currentPageBooks.value = 1;
   }
 
   // Check if currently showing child categories

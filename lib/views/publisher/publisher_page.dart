@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../controllers/publisher_controller.dart';
 import '../../widgets/loading_animations.dart';
+import 'imprint_books_page.dart';
 
 class PublisherPage extends StatefulWidget {
   const PublisherPage({super.key});
@@ -204,9 +205,7 @@ class _PublisherPageState extends State<PublisherPage> {
 
   Widget _buildImprintsAndBooks() {
     return Obx(() {
-      if (controller.isLoading.value &&
-          controller.imprints.isEmpty &&
-          controller.imprintBooks.isEmpty) {
+      if (controller.isLoading.value && controller.imprints.isEmpty) {
         return LoadingAnimations.buildMainLoading(
             title: 'Memuat Imprint...',
             icon: Icons.label,
@@ -233,31 +232,7 @@ class _PublisherPageState extends State<PublisherPage> {
                 ),
               ),
             ],
-            if (controller.imprintBooks.isNotEmpty) ...[
-              SliverToBoxAdapter(
-                  child: _buildSectionHeader(
-                      'Buku', Colors.blue, Icons.menu_book)),
-              SliverPadding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                sliver: SliverList(
-                  delegate: SliverChildBuilderDelegate(
-                    (context, index) =>
-                        _buildBookItem(controller.imprintBooks[index]),
-                    childCount: controller.imprintBooks.length,
-                  ),
-                ),
-              ),
-            ],
-            if (controller.hasMoreBooks.value ||
-                controller.isLoadingBooks.value)
-              SliverToBoxAdapter(
-                  child: controller.isLoadingBooks.value
-                      ? LoadingAnimations.buildCompactLoading(
-                          text: 'Memuat buku...', color: Colors.blue)
-                      : const SizedBox.shrink()),
-            if (controller.imprints.isEmpty &&
-                controller.imprintBooks.isEmpty &&
-                !controller.isLoading.value)
+            if (controller.imprints.isEmpty && !controller.isLoading.value)
               SliverFillRemaining(child: _buildEmptyState()),
           ],
         ),
@@ -271,8 +246,12 @@ class _PublisherPageState extends State<PublisherPage> {
       elevation: 1,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       child: InkWell(
-        onTap: () =>
-            controller.fetchImprintBooks(imprint['id'], imprint['name']),
+        onTap: () {
+          Get.to(() => ImprintBooksPage(
+                imprintId: imprint['id'],
+                imprintName: imprint['name'] ?? 'Imprint',
+              ));
+        },
         borderRadius: BorderRadius.circular(8),
         child: Padding(
           padding: const EdgeInsets.all(12),
@@ -292,65 +271,6 @@ class _PublisherPageState extends State<PublisherPage> {
                       style: const TextStyle(
                           fontSize: 14, fontWeight: FontWeight.w500))),
               Icon(Icons.arrow_forward_ios, color: Colors.grey[400], size: 14),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildBookItem(Map<String, dynamic> book) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      elevation: 1,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-      child: InkWell(
-        onTap: () => Get.toNamed('/book-detail',
-            parameters: {'bookId': book['id_barang']}),
-        borderRadius: BorderRadius.circular(8),
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Row(
-            children: [
-              Container(
-                width: 50,
-                height: 70,
-                decoration: BoxDecoration(
-                    color: Colors.grey[300],
-                    borderRadius: BorderRadius.circular(8)),
-                child: book['gambar1'] != null
-                    ? ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: Image.network(book['gambar1'],
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) =>
-                                const Icon(Icons.book, color: Colors.grey)))
-                    : const Icon(Icons.book, color: Colors.grey),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(book['judul'] ?? 'N/A',
-                        style: const TextStyle(
-                            fontSize: 14, fontWeight: FontWeight.bold),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis),
-                    const SizedBox(height: 4),
-                    if (book['diskon_price'] != null)
-                      Text('Rp ${book['diskon_price']}',
-                          style: const TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.green)),
-                    if (book['jumlah_terjual'] != null)
-                      Text('Terjual: ${book['jumlah_terjual']}',
-                          style:
-                              TextStyle(fontSize: 10, color: Colors.grey[600])),
-                  ],
-                ),
-              ),
             ],
           ),
         ),
@@ -395,7 +315,7 @@ class _PublisherPageState extends State<PublisherPage> {
                   fontWeight: FontWeight.bold,
                   color: Colors.grey[600])),
           const SizedBox(height: 8),
-          Text('Belum ada imprint atau buku dalam penerbit ini',
+          Text('Belum ada imprint dalam penerbit ini',
               style: TextStyle(fontSize: 14, color: Colors.grey[500]),
               textAlign: TextAlign.center),
         ],

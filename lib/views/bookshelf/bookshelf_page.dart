@@ -84,52 +84,80 @@ class _BookshelfPageState extends State<BookshelfPage> {
                   },
                   borderRadius: BorderRadius.circular(12),
                   child: Container(
+                    width: 160,
+                    height: 280,
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: borderRadiusTheme,
-                      boxShadow: [boxShadow],
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.07),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                      border:
+                          Border.all(color: colorTextGrey.withOpacity(0.15)),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        // Cover Image full width
                         ClipRRect(
                           borderRadius: const BorderRadius.vertical(
-                              top: Radius.circular(12)),
-                          child: Image.network(
-                            buku['gambar1'] ?? '',
-                            height: 150,
+                              top: Radius.circular(14)),
+                          child: SizedBox(
+                            height: 180,
                             width: double.infinity,
-                            fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => Container(
-                              height: 150,
-                              width: double.infinity,
-                              color: colorGrey.withOpacity(0.2),
-                              child: Icon(Icons.hide_image, color: colorGrey),
+                            child: Image.network(
+                              buku['gambar1'] ?? '',
+                              fit: BoxFit.contain,
+                              errorBuilder: (_, __, ___) => Container(
+                                color: colorGrey.withOpacity(0.2),
+                                child:
+                                    Icon(Icons.broken_image, color: colorGrey),
+                              ),
                             ),
                           ),
                         ),
-                        Padding(
-                          padding: const EdgeInsets.all(10),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                buku['judul'] ?? '-',
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: textTheme.bodyMedium
-                                    ?.copyWith(fontWeight: FontWeight.bold),
-                              ),
-                              const SizedBox(height: 1),
-                              Text('Tahun: ${buku['tahun'] ?? '-'}',
-                                  style: textTheme.bodySmall),
-                              const SizedBox(height: 4),
-                              Text(
-                                'Ditambahkan : ${buku['rak_created_at'] != null && buku['rak_created_at'].toString().length >= 10 ? buku['rak_created_at'].toString().substring(0, 10) : '-'}',
-                                style: textTheme.bodySmall
-                                    ?.copyWith(color: colorPrimary),
-                              ),
-                            ],
+                        // Book details
+                        Expanded(
+                          child: Padding(
+                            padding: const EdgeInsets.fromLTRB(8, 8, 8, 8),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  buku['judul'] ?? '-',
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: textTheme.titleSmall?.copyWith(
+                                    fontWeight: FontWeight.w400,
+                                    fontSize: 14,
+                                    height: 1.2,
+                                  ),
+                                ),
+                                Text(
+                                  'Tahun: ${buku['tahun'] ?? '-'}',
+                                  style: textTheme.titleSmall?.copyWith(
+                                    fontWeight: FontWeight.w300,
+                                    fontSize: 11,
+                                    height: 1.2,
+                                  ),
+                                ),
+                                Text(
+                                  'Ditambahkan: ${buku['rak_created_at'] != null && buku['rak_created_at'].toString().length >= 10 ? buku['rak_created_at'].toString().substring(0, 10) : '-'}',
+                                  style: textTheme.bodyMedium?.copyWith(
+                                    color: colorPrimary,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 12,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ],

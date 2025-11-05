@@ -2,6 +2,7 @@ class BookModel {
   final String idBarang;
   final String slugBarang;
   final String judul;
+  final String penulis;
   final String sinopsis;
   final bool isDisplay;
   final bool? isOnCampaign;
@@ -24,6 +25,7 @@ class BookModel {
     required this.idBarang,
     required this.slugBarang,
     required this.judul,
+    required this.penulis,
     required this.sinopsis,
     required this.isDisplay,
     this.isOnCampaign,
@@ -48,6 +50,7 @@ class BookModel {
       idBarang: json['id_barang'] ?? '',
       slugBarang: json['slug_barang'] ?? '',
       judul: json['judul'] ?? '',
+      penulis: json['penulis'] ?? '',
       sinopsis: json['sinopsis'] ?? '',
       isDisplay: json['isDisplay'] ?? false,
       isOnCampaign: json['isOnCampaign'],
@@ -74,6 +77,7 @@ class BookModel {
       'id_barang': idBarang,
       'slug_barang': slugBarang,
       'judul': judul,
+      'penulis': penulis,
       'sinopsis': sinopsis,
       'isDisplay': isDisplay,
       'isOnCampaign': isOnCampaign,

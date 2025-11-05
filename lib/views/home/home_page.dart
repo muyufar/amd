@@ -190,7 +190,7 @@ class _HomeContentState extends State<HomeContent> {
           // Search bar tetap di atas
           Container(
             width: double.infinity,
-            height: 80,
+            height: 70,
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
@@ -209,15 +209,15 @@ class _HomeContentState extends State<HomeContent> {
               ],
             ),
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 24, 16, 0),
+              padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
               child: Row(
                 children: [
                   // Search bar
                   Expanded(
                     child: Container(
-                      height: 50,
+                      height: 42,
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: Colors.white.withOpacity(0.85),
                         borderRadius: BorderRadius.circular(12),
                         boxShadow: [
                           BoxShadow(
@@ -229,15 +229,18 @@ class _HomeContentState extends State<HomeContent> {
                       ),
                       child: Row(
                         children: [
-                          const SizedBox(width: 12),
-                          Icon(Icons.search, color: Colors.grey[700]),
-                          const SizedBox(width: 8),
+                          const SizedBox(width: 10),
+                          Icon(Icons.search, color: Colors.grey[700], size: 20),
+                          const SizedBox(width: 6),
                           Expanded(
                             child: TextField(
+                              style: const TextStyle(fontSize: 14),
                               decoration: const InputDecoration(
                                 hintText: 'Cari buku, penulis, atau penerbit',
                                 border: InputBorder.none,
                                 isDense: true,
+                                contentPadding:
+                                    EdgeInsets.symmetric(vertical: 10),
                               ),
                               readOnly: true,
                               onTap: () {
@@ -261,10 +264,10 @@ class _HomeContentState extends State<HomeContent> {
                       }
                     },
                     child: Container(
-                      height: 50,
-                      width: 70,
+                      height: 42,
+                      width: 65,
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: Colors.white.withOpacity(0.85),
                         borderRadius: BorderRadius.circular(12),
                         boxShadow: [
                           BoxShadow(
@@ -278,11 +281,12 @@ class _HomeContentState extends State<HomeContent> {
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Icon(Icons.shopping_cart,
-                                  color: Colors.grey[700]),
+                                  color: Colors.grey[700], size: 20),
                               const SizedBox(width: 4),
                               Text('${cartController.cartCount}',
-                                  style:
-                                      TextStyle(fontWeight: FontWeight.bold)),
+                                  style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 14)),
                             ],
                           )),
                     ),
@@ -528,17 +532,28 @@ class BookCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
+                    Text(
+                      buku['penulis'] ?? '-',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w300,
+                        fontSize: 11,
+                        height: 1.2,
+                      ),
+                    ),
                     // Book title
                     Text(
                       buku['judul'] ?? '-',
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w400,
                         fontSize: 14,
                         height: 1.2,
                       ),
                     ),
+
                     // Price
                     Text(
                       'Rp ${buku['harga'] ?? '-'}',

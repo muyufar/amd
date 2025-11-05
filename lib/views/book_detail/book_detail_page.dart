@@ -306,46 +306,27 @@ class BookDetailPage extends StatelessWidget {
                       ),
                     ),
                   ),
-                // SPESIFIKASI
-                const SizedBox(height: 8),
-                const Text('Spesifikasi',
-                    style:
-                        TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                const SizedBox(height: 8),
-                if (data['info'] != null && data['info'] is List)
-                  Table(
-                    columnWidths: const {
-                      0: IntrinsicColumnWidth(),
-                      1: FlexColumnWidth(),
-                    },
-                    children: [
-                      ...List.generate((data['info'] as List).length, (i) {
-                        final info = data['info'][i];
-                        return TableRow(children: [
-                          Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 4),
-                            child: Text(
-                              (info['label'] ?? '').toString().capitalizeFirst!,
-                              style:
-                                  const TextStyle(fontWeight: FontWeight.w500),
-                            ),
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 4),
-                            child: Text(info['value']?.toString() ?? '-'),
-                          ),
-                        ]);
-                      }),
-                    ],
-                  ),
-                const SizedBox(height: 16),
+
                 // DESKRIPSI
                 const Text('Deskripsi',
-                    style:
-                        TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    )),
                 const SizedBox(height: 4),
-                _ExpandableText(text: data['sinopsis'] ?? '-'),
+                _ExpandableText(
+                  text: data['sinopsis'] ?? '-',
+                ),
                 const SizedBox(height: 24),
+                // SPESIFIKASI / INFORMASI BUKU
+                const SizedBox(height: 8),
+                const Text('Informasi Buku',
+                    style:
+                        TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                const SizedBox(height: 16),
+                if (data['info'] != null && data['info'] is List)
+                  _BookInfoSection(infoList: data['info'] as List),
+                const SizedBox(height: 16),
                 // ULASAN PEMBELI
                 const Text('Ulasan Pembeli',
                     style:
@@ -448,6 +429,7 @@ class BookDetailPage extends StatelessWidget {
                         style: TextStyle(color: Colors.grey));
                   }
                 }),
+
                 // FORM BERI RATING & REVIEW
                 if ((data['status_ebook'] ?? '').toString().toLowerCase() ==
                     'beri rating')
@@ -596,78 +578,6 @@ class BookDetailPage extends StatelessWidget {
                   ),
                 ),
               ),
-            ),
-          ),
-
-          // Divider
-          Container(
-            width: 1,
-            height: 40,
-            color: Colors.grey[300],
-          ),
-
-          // Tombol Preview
-          Container(
-            width: 60,
-            height: 60,
-            decoration: BoxDecoration(
-              color: Colors.teal,
-            ),
-            child: IconButton(
-              icon: const Icon(
-                Icons.visibility,
-                color: Colors.white,
-                size: 24,
-              ),
-              onPressed: () {
-                print('🔍 [PREVIEW BUTTON] Button pressed');
-                print('🔍 [PREVIEW BUTTON] Data keys: ${data.keys.toList()}');
-                print(
-                    '🔍 [PREVIEW BUTTON] file_ebook_preview raw: ${data['file_ebook_preview']}');
-                print(
-                    '🔍 [PREVIEW BUTTON] file_ebook_preview type: ${data['file_ebook_preview'].runtimeType}');
-
-                // Coba akses dari BookModel terlebih dahulu
-                final bookModel = controller.bookModel.value;
-                String? fileEbookPreview;
-
-                if (bookModel != null && bookModel.fileEbookPreview != null) {
-                  fileEbookPreview = bookModel.fileEbookPreview;
-                  print(
-                      '🔍 [PREVIEW BUTTON] Using BookModel fileEbookPreview: $fileEbookPreview');
-                } else {
-                  // Fallback ke data raw
-                  fileEbookPreview =
-                      data['file_ebook_preview']?.toString() ?? '';
-                  print(
-                      '🔍 [PREVIEW BUTTON] Using raw data fileEbookPreview: $fileEbookPreview');
-                }
-
-                print(
-                    '🔍 [PREVIEW BUTTON] fileEbookPreview final: $fileEbookPreview');
-                print(
-                    '🔍 [PREVIEW BUTTON] fileEbookPreview length: ${fileEbookPreview?.length ?? 0}');
-                print(
-                    '🔍 [PREVIEW BUTTON] fileEbookPreview isEmpty: ${fileEbookPreview?.isEmpty ?? true}');
-
-                if (fileEbookPreview != null && fileEbookPreview.isNotEmpty) {
-                  print(
-                      '🔍 [PREVIEW BUTTON] Opening preview: $fileEbookPreview');
-                  // Navigate to PDF viewer with preview URL
-                  Get.to(() =>
-                      _PDFViewerPage(url: fileEbookPreview!, isPreview: true));
-                } else {
-                  print(
-                      '🔍 [PREVIEW BUTTON] Preview not available, showing dialog');
-                  Get.defaultDialog(
-                    title: 'Infos',
-                    middleText: 'Preview buku belum tersedia untuk buku inih',
-                    textConfirm: 'OK',
-                    confirmTextColor: Colors.white,
-                    onConfirm: () => Get.back(),
-                  );
-                }
-              },
             ),
           ),
 
@@ -982,6 +892,7 @@ class _ExpandableTextState extends State<_ExpandableText> {
       widget.text,
       maxLines: expanded ? null : maxLines,
       overflow: expanded ? TextOverflow.visible : TextOverflow.ellipsis,
+      textAlign: TextAlign.justify,
       style: const TextStyle(fontSize: 15),
     );
     final isLong = widget.text.length > 120;
@@ -1194,6 +1105,214 @@ class _PDFViewerPage extends StatelessWidget {
           print(
               'PDF Loaded successfully: ${details.document.pages.count} pages');
         },
+      ),
+    );
+  }
+}
+
+class _BookInfoSection extends StatefulWidget {
+  final List<dynamic> infoList;
+  const _BookInfoSection({required this.infoList});
+
+  @override
+  State<_BookInfoSection> createState() => _BookInfoSectionState();
+}
+
+class _BookInfoSectionState extends State<_BookInfoSection> {
+  bool _showAllAuthors = false;
+  static const int _maxAuthorsToShow = 3;
+
+  @override
+  Widget build(BuildContext context) {
+    // Split info into two columns
+    final leftColumn = <Widget>[];
+    final rightColumn = <Widget>[];
+
+    for (int i = 0; i < widget.infoList.length; i++) {
+      final info = widget.infoList[i];
+      final label = (info['label'] ?? '').toString().capitalizeFirst ?? '';
+      final value = info['value']?.toString() ?? '-';
+
+      final infoItem = _buildInfoItem(label, value, info);
+
+      // Distribute items into two columns (alternating)
+      if (i % 2 == 0) {
+        leftColumn.add(infoItem);
+      } else {
+        rightColumn.add(infoItem);
+      }
+    }
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Left column
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: leftColumn,
+          ),
+        ),
+        const SizedBox(width: 24),
+        // Right column
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: rightColumn,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildInfoItem(String label, String value, Map<String, dynamic> info) {
+    // Check if this is a clickable field (Penerbit, Penulis)
+    final isClickable =
+        label.toLowerCase() == 'penerbit' || label.toLowerCase() == 'penulis';
+
+    // Special handling for Penulis
+    if (label.toLowerCase() == 'penulis' && value.contains(',')) {
+      return _buildAuthorsSection(value, info);
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Key (label)
+          Text(
+            label,
+            style: TextStyle(
+              color: Colors.grey[600],
+              fontSize: 14,
+              fontWeight: FontWeight.normal,
+            ),
+          ),
+          const SizedBox(height: 4),
+          // Value
+          if (isClickable)
+            GestureDetector(
+              onTap: () {
+                // Handle click action for Penerbit
+                if (label.toLowerCase() == 'penerbit') {
+                  // Navigate to publisher page or show publisher books
+                  // You can implement navigation here if needed
+                }
+              },
+              child: Text(
+                value,
+                style: const TextStyle(
+                  color: Colors.black87,
+                  fontSize: 14,
+                  decoration: TextDecoration.underline,
+                ),
+              ),
+            )
+          else
+            Text(
+              value,
+              style: const TextStyle(
+                color: Colors.black87,
+                fontSize: 14,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAuthorsSection(String authorsValue, Map<String, dynamic> info) {
+    final authors = authorsValue.split(',').map((e) => e.trim()).toList();
+    final authorsToShow =
+        _showAllAuthors ? authors : authors.take(_maxAuthorsToShow).toList();
+    final hasMoreAuthors = authors.length > _maxAuthorsToShow;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Key (label)
+          Text(
+            'Penulis',
+            style: TextStyle(
+              color: Colors.grey[600],
+              fontSize: 14,
+              fontWeight: FontWeight.normal,
+            ),
+          ),
+          const SizedBox(height: 4),
+          // Authors list
+          ...authorsToShow.map((author) => Padding(
+                padding: const EdgeInsets.only(bottom: 2),
+                child: GestureDetector(
+                  onTap: () {
+                    // Handle click action for author
+                    // You can implement navigation here if needed
+                  },
+                  child: Text(
+                    '$author,',
+                    style: const TextStyle(
+                      color: Colors.black87,
+                      fontSize: 14,
+                      decoration: TextDecoration.underline,
+                    ),
+                  ),
+                ),
+              )),
+          // "Lainnya" button if there are more authors
+          if (hasMoreAuthors && !_showAllAuthors)
+            GestureDetector(
+              onTap: () {
+                setState(() {
+                  _showAllAuthors = true;
+                });
+              },
+              child: Row(
+                children: [
+                  const Text(
+                    'Lainnya',
+                    style: TextStyle(
+                      color: Colors.black87,
+                      fontSize: 14,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Icon(
+                    Icons.keyboard_arrow_down,
+                    size: 16,
+                    color: Colors.grey[700],
+                  ),
+                ],
+              ),
+            ),
+          if (_showAllAuthors && hasMoreAuthors)
+            GestureDetector(
+              onTap: () {
+                setState(() {
+                  _showAllAuthors = false;
+                });
+              },
+              child: Row(
+                children: [
+                  const Text(
+                    'Tutup',
+                    style: TextStyle(
+                      color: Colors.black87,
+                      fontSize: 14,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Icon(
+                    Icons.keyboard_arrow_up,
+                    size: 16,
+                    color: Colors.grey[700],
+                  ),
+                ],
+              ),
+            ),
+        ],
       ),
     );
   }

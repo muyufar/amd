@@ -20,6 +20,8 @@ class TransactionPage extends StatelessWidget {
             appBar: AppBar(
               title: const Text('Riwayat Transaksi'),
               bottom: const TabBar(
+                isScrollable: true,
+                labelPadding: EdgeInsets.symmetric(horizontal: 16),
                 tabs: [
                   Tab(text: 'Belum Dibayar'),
                   Tab(text: 'Selesai'),
@@ -41,18 +43,21 @@ class TransactionPage extends StatelessWidget {
                   ),
                   _TransactionList(
                     controller.selesaiList,
+                    enableTapToCheckout: true,
                     isLoading: controller.isLoadingSelesai.value,
                     error: controller.errorSelesai.value,
                     onRefresh: controller.refreshSelesai,
                   ),
                   _TransactionList(
                     controller.kadaluwarsaList,
+                    enableTapToCheckout: true,
                     isLoading: controller.isLoadingKadaluwarsa.value,
                     error: controller.errorKadaluwarsa.value,
                     onRefresh: controller.refreshKadaluwarsa,
                   ),
                   _TransactionList(
                     controller.dibatalkanList,
+                    enableTapToCheckout: true,
                     isLoading: controller.isLoadingDibatalkan.value,
                     error: controller.errorDibatalkan.value,
                     onRefresh: controller.refreshDibatalkan,
@@ -92,7 +97,9 @@ class _TransactionList extends StatelessWidget {
                   '🔍 [TRANSACTION PAGE] transaction.idTransaksi: ${transaction.idTransaksi}');
               // Navigate to transaction detail page
               Get.to(() => TransactionDetailPage(
-                    invoiceId: transaction.idTransaksi,
+                    invoiceId: transaction.idInvoice.isNotEmpty
+                        ? transaction.idInvoice
+                        : transaction.idTransaksi,
                   ));
             }
           : null,
@@ -207,7 +214,9 @@ class _TransactionList extends StatelessWidget {
                             '🔍 [TRANSACTION PAGE] transaction.idTransaksi: ${transaction.idTransaksi}');
                         // Navigate to transaction detail page
                         Get.to(() => TransactionDetailPage(
-                              invoiceId: transaction.idTransaksi,
+                              invoiceId: transaction.idInvoice.isNotEmpty
+                                  ? transaction.idInvoice
+                                  : transaction.idTransaksi,
                             ));
                       }
                     : null,
@@ -550,7 +559,9 @@ class _TransactionBookItem extends StatelessWidget {
                   '🔍 [TRANSACTION PAGE] transaction.idTransaksi: ${transaction.idTransaksi}');
               // Navigate to transaction detail page
               Get.to(() => TransactionDetailPage(
-                    invoiceId: transaction.idTransaksi,
+                    invoiceId: transaction.idInvoice.isNotEmpty
+                        ? transaction.idInvoice
+                        : transaction.idTransaksi,
                   ));
             }
           : null,
