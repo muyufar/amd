@@ -264,5 +264,44 @@ class BookService {
     }
   }
 
-  // TODO: Implementasi fetch buku, detail buku, dsb
+  Future<List<Map<String, dynamic>>> fetchBonusBooks() async {
+    final token = box.read('token');
+    final url = Uri.parse('${AppConfig.baseUrlApp}/ebook/bonus');
+
+    print('🔵 [BOOK SERVICE] Fetching bonus books from: $url');
+
+    try {
+      final headers = <String, String>{
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      };
+      
+      if (token != null && token.toString().isNotEmpty) {
+        headers['Authorization'] = 'Bearer $token';
+      }
+
+      final response = await http.get(url, headers: headers);
+
+      print('🔵 [BOOK SERVICE] Response Status: ${response.statusCode}');
+      print('🔵 [BOOK SERVICE] Response Body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data['status'] == true && data['data'] != null) {
+          return List<Map<String, dynamic>>.from(data['data']);
+        } else {
+          return [];
+        }
+      } else if (response.statusCode == 401) {
+        AuthController.instance.checkTokenAndLogoutIfExpired();
+        return [];
+      } else {
+        throw Exception(
+            'Failed to fetch bonus books: ${response.statusCode} - ${response.body}');
+      }
+    } catch (e) {
+      print('🔴 [BOOK SERVICE] Error fetching bonus books: $e');
+      rethrow;
+    }
+  }
 }

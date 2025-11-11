@@ -67,7 +67,7 @@ if (flutterVersionName == null) {
         minSdkVersion 21
         targetSdkVersion 35
         multiDexEnabled true
-        versionCode 2
+        versionCode 4
         versionName flutterVersionName
        
     }

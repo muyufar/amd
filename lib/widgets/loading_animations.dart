@@ -1,5 +1,129 @@
 import 'package:flutter/material.dart';
 
+class _EmptyBonusBooksWidget extends StatefulWidget {
+  const _EmptyBonusBooksWidget();
+
+  @override
+  State<_EmptyBonusBooksWidget> createState() => _EmptyBonusBooksWidgetState();
+}
+
+class _EmptyBonusBooksWidgetState extends State<_EmptyBonusBooksWidget>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(seconds: 2),
+      vsync: this,
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          // Animated gift icon with looping animation
+          AnimatedBuilder(
+            animation: _controller,
+            builder: (context, child) {
+              return Transform.scale(
+                scale: 0.8 + (_controller.value * 0.2),
+                child: Transform.rotate(
+                  angle: (_controller.value - 0.5) * 0.2,
+                  child: Container(
+                    width: 120,
+                    height: 120,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          Colors.green.withOpacity(0.2 + _controller.value * 0.2),
+                          Colors.green.withOpacity(0.4 + _controller.value * 0.2),
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(30),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.green.withOpacity(0.2 + _controller.value * 0.1),
+                          blurRadius: 20,
+                          spreadRadius: 5,
+                        ),
+                      ],
+                    ),
+                    child: Icon(
+                      Icons.card_giftcard,
+                      size: 60,
+                      color: Colors.green.shade700,
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+          const SizedBox(height: 30),
+
+          // Animated text
+          TweenAnimationBuilder<double>(
+            duration: const Duration(milliseconds: 1500),
+            tween: Tween(begin: 0.0, end: 1.0),
+            builder: (context, value, child) {
+              return Opacity(
+                opacity: value,
+                child: Text(
+                  'Bonus Buku Belum Ada',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.grey.shade700,
+                  ),
+                ),
+              );
+            },
+          ),
+          const SizedBox(height: 12),
+
+          // Subtitle text
+          TweenAnimationBuilder<double>(
+            duration: const Duration(milliseconds: 2000),
+            tween: Tween(begin: 0.0, end: 1.0),
+            builder: (context, value, child) {
+              return Opacity(
+                opacity: value,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 40),
+                  child: Text(
+                    'Bonus buku akan muncul di sini ketika tersedia',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey.shade600,
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+          const SizedBox(height: 30),
+
+          // Animated dots
+          LoadingAnimations._buildAnimatedDots(Colors.green),
+        ],
+      ),
+    );
+  }
+}
+
 class LoadingAnimations {
   // Main loading animation for general pages
   static Widget buildMainLoading({
@@ -291,6 +415,11 @@ class LoadingAnimations {
         );
       },
     );
+  }
+
+  // Empty state animation for bonus books
+  static Widget buildEmptyBonusBooks() {
+    return const _EmptyBonusBooksWidget();
   }
 
   // Animated dots helper
