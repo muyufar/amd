@@ -3,5 +3,5 @@ class AppConfig {
   static const String baseUrlApp = 'https://dashboard.ebookamd.com/api/dev';
   // TODO: Set this to your OAuth 2.0 Web Client ID from Google Cloud Console
   static const String googleWebClientId =
-      '1053029938463-n1f640ku3r92hrtsrmj0si1k5f6b06iq.apps.googleusercontent.com';
+      '515488241546-lrkf5koblbrem4hrv19uad32jp6g7ch2.apps.googleusercontent.com';
 }

@@ -65,7 +65,7 @@ class _BannerSliderState extends State<BannerSlider> {
 
   void _startAutoSlide() {
     _timer?.cancel();
-    _timer = Timer.periodic(Duration(seconds: 10), (timer) {
+    _timer = Timer.periodic(Duration(seconds: 5), (timer) {
       if (mounted && banners.isNotEmpty) {
         int nextIndex = (currentIndex + 1) % banners.length;
         _pageController?.animateToPage(

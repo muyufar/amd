@@ -49,6 +49,8 @@ dependencies:
   lottie: ^2.7.0
   google_sign_in: ^6.2.1
   flutter_svg: ^2.0.9
+  flutter_windowmanager: ^0.2.0
+  platform: ^3.1.0
 
 dev_dependencies:
   flutter_test:

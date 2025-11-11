@@ -90,7 +90,7 @@ class _HomePageState extends State<HomePage> {
               child: Icon(Icons.favorite_border,
                   size: 30, key: ValueKey(_selectedIndex == 1)),
             ),
-            label: _selectedIndex == 1 ? 'Favorit' : '',
+            label: _selectedIndex == 1 ? 'Wishlist' : '',
           ),
           BottomNavigationBarItem(
             icon: AnimatedSwitcher(
@@ -358,56 +358,6 @@ class _HomeContentState extends State<HomeContent> {
                         ),
                       ),
                       const SizedBox(height: 20),
-                      // Section Terbaru
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text('Terbaru',
-                                style: textTheme.titleMedium
-                                    ?.copyWith(fontWeight: FontWeight.bold)),
-                            TextButton(
-                              onPressed: () {
-                                Get.to(() => EbookListPage(
-                                      title: 'Ebook Terbaru',
-                                      type: EbookListType.terbaru,
-                                    ));
-                              },
-                              child: Text('Lihat Semua',
-                                  style: TextStyle(color: colorPrimary)),
-                            ),
-                          ],
-                        ),
-                      ),
-                      SizedBox(
-                        height:
-                            290, // atau 270, atau lebih besar sesuai kebutuhan
-                        child: Obx(() {
-                          if (controller.isLoadingTerbaru.value) {
-                            return LoadingAnimations.buildCompactLoading(
-                              text: 'Memuat buku terbaru...',
-                              color: Colors.green,
-                            );
-                          } else if (controller.errorTerbaru.value.isNotEmpty) {
-                            return Center(
-                                child: Text(controller.errorTerbaru.value));
-                          } else if (controller.bukuTerbaru.isEmpty) {
-                            return const Center(child: Text('Tidak ada data'));
-                          }
-                          return ListView.separated(
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                            scrollDirection: Axis.horizontal,
-                            itemCount: controller.bukuTerbaru.length,
-                            separatorBuilder: (_, __) =>
-                                const SizedBox(width: 12),
-                            itemBuilder: (context, index) {
-                              final buku = controller.bukuTerbaru[index];
-                              return BookCard(buku: buku);
-                            },
-                          );
-                        }),
-                      ),
                       // Section Terlaris
                       Padding(
                         padding: const EdgeInsets.symmetric(
@@ -460,6 +410,56 @@ class _HomeContentState extends State<HomeContent> {
                         }),
                       ),
                       const SizedBox(height: 16),
+                      // Section Terbaru
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text('Terbaru',
+                                style: textTheme.titleMedium
+                                    ?.copyWith(fontWeight: FontWeight.bold)),
+                            TextButton(
+                              onPressed: () {
+                                Get.to(() => EbookListPage(
+                                      title: 'Ebook Terbaru',
+                                      type: EbookListType.terbaru,
+                                    ));
+                              },
+                              child: Text('Lihat Semua',
+                                  style: TextStyle(color: colorPrimary)),
+                            ),
+                          ],
+                        ),
+                      ),
+                      SizedBox(
+                        height:
+                            290, // atau 270, atau lebih besar sesuai kebutuhan
+                        child: Obx(() {
+                          if (controller.isLoadingTerbaru.value) {
+                            return LoadingAnimations.buildCompactLoading(
+                              text: 'Memuat buku terbaru...',
+                              color: Colors.green,
+                            );
+                          } else if (controller.errorTerbaru.value.isNotEmpty) {
+                            return Center(
+                                child: Text(controller.errorTerbaru.value));
+                          } else if (controller.bukuTerbaru.isEmpty) {
+                            return const Center(child: Text('Tidak ada data'));
+                          }
+                          return ListView.separated(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            scrollDirection: Axis.horizontal,
+                            itemCount: controller.bukuTerbaru.length,
+                            separatorBuilder: (_, __) =>
+                                const SizedBox(width: 12),
+                            itemBuilder: (context, index) {
+                              final buku = controller.bukuTerbaru[index];
+                              return BookCard(buku: buku);
+                            },
+                          );
+                        }),
+                      ),
                       // Kategori Section
                       // CategorySection(),
                       // const SizedBox(height: 16),

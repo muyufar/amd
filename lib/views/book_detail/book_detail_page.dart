@@ -7,6 +7,8 @@ import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 import 'package:intl/intl.dart';
 import '../category/category_books_page.dart';
 import '../../widgets/loading_animations.dart';
+import 'package:flutter/services.dart';
+import 'dart:io' show Platform;
 
 class BookDetailPage extends StatelessWidget {
   final BookDetailController controller = Get.put(BookDetailController());
@@ -42,7 +44,6 @@ class BookDetailPage extends StatelessWidget {
     return formatter.format(intValue);
   }
 
-  final reviewFormKey = GlobalKey();
   final scrollController = ScrollController();
 
   BookDetailPage({
@@ -327,6 +328,16 @@ class BookDetailPage extends StatelessWidget {
                 if (data['info'] != null && data['info'] is List)
                   _BookInfoSection(infoList: data['info'] as List),
                 const SizedBox(height: 16),
+                // BONUS BUKU (jika ada)
+                if (_hasBonusBooks(data)) ...[
+                  const Text('Bonus Buku',
+                      style:
+                          TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                  const SizedBox(height: 16),
+                  _BonusBooksSection(
+                      bonusBooks: data['file_bonus_ebook'] as List),
+                  const SizedBox(height: 16),
+                ],
                 // ULASAN PEMBELI
                 const Text('Ulasan Pembeli',
                     style:
@@ -429,15 +440,6 @@ class BookDetailPage extends StatelessWidget {
                         style: TextStyle(color: Colors.grey));
                   }
                 }),
-
-                // FORM BERI RATING & REVIEW
-                if ((data['status_ebook'] ?? '').toString().toLowerCase() ==
-                    'beri rating')
-                  KeyedSubtree(
-                    key: reviewFormKey,
-                    child: _ReviewForm(
-                        idEbook: data['id_barang'] ?? data['id_ebook'] ?? ''),
-                  ),
                 const SizedBox(height: 80), // Untuk ruang tombol bawah
               ],
             ),
@@ -471,10 +473,7 @@ class BookDetailPage extends StatelessWidget {
 
     // Jika status BUKAN "beli sekarang", berarti buku sudah dibeli
     if (statusEbook != 'beli sekarang' && statusEbook.isNotEmpty) {
-      // Cek apakah user sudah memberikan rating
-      final hasUserReviewed = _checkIfUserHasReviewed(data);
-      print('🔍 [BOOK DETAIL] Has user reviewed: $hasUserReviewed');
-      return _buildOwnedBookButtons(data, hasUserReviewed);
+      return _buildOwnedBookButtons(data);
     }
 
     // Jika status adalah "beli sekarang" atau default
@@ -482,33 +481,19 @@ class BookDetailPage extends StatelessWidget {
         data, adaDiskon, hargaAkhir, hargaOriginal, kodeAfiliasi);
   }
 
-  bool _checkIfUserHasReviewed(Map<String, dynamic> data) {
-    final statusEbook = (data['status_ebook'] ?? '').toString().toLowerCase();
-
-    // Debug: Print status untuk troubleshooting
-    print('🔍 [BOOK DETAIL] Checking review status for: $statusEbook');
-
-    // Jika status masih "beri rating", berarti user belum memberikan rating
-    if (statusEbook == 'beri rating') {
-      print('🔍 [BOOK DETAIL] User belum rating (status: beri rating)');
-      return false;
+  bool _hasBonusBooks(Map<String, dynamic> data) {
+    final fileBonusEbook = data['file_bonus_ebook'];
+    if (fileBonusEbook == null) return false;
+    if (fileBonusEbook is List) {
+      return fileBonusEbook.isNotEmpty &&
+          fileBonusEbook.any((url) => url != null && url.toString().isNotEmpty);
     }
-
-    // Jika status bukan "beri rating" dan bukan "beli sekarang", berarti user sudah memberikan rating
-    if (statusEbook != 'beli sekarang' && statusEbook.isNotEmpty) {
-      print('🔍 [BOOK DETAIL] User sudah rating (status: $statusEbook)');
-      return true;
-    }
-
-    // Default: belum rating
-    print('🔍 [BOOK DETAIL] Default: User belum rating');
     return false;
   }
 
-  Widget _buildOwnedBookButtons(
-      Map<String, dynamic> data, bool hasUserReviewed) {
+  Widget _buildOwnedBookButtons(Map<String, dynamic> data) {
     return Container(
-      height: 60,
+      height: 50,
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
@@ -520,137 +505,53 @@ class BookDetailPage extends StatelessWidget {
           ),
         ],
       ),
-      child: Row(
-        children: [
-          // Tombol Baca Buku (selalu ada)
-          Expanded(
-            child: Container(
-              height: 60,
-              decoration: BoxDecoration(
-                color: Colors.blue,
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(12),
-                  bottomLeft: Radius.circular(12),
-                ),
-              ),
-              child: Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(12),
-                    bottomLeft: Radius.circular(12),
+      child: Container(
+        height: 50,
+        decoration: BoxDecoration(
+          color: Colors.blue,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(12),
+            onTap: () {
+              final fileEbook = data['file_ebook_pdf']?.toString() ?? '';
+              if (fileEbook.isNotEmpty) {
+                Get.to(() => _PDFViewerPage(url: fileEbook, isPreview: false));
+              } else {
+                Get.defaultDialog(
+                  title: 'Info',
+                  middleText: 'File ebook belum tersedia',
+                  textConfirm: 'OK',
+                  confirmTextColor: Colors.white,
+                  onConfirm: () => Get.back(),
+                );
+              }
+            },
+            child: Center(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(
+                    Icons.menu_book,
+                    color: Colors.white,
+                    size: 18,
                   ),
-                  onTap: () {
-                    final fileEbook = data['file_ebook_pdf']?.toString() ?? '';
-                    if (fileEbook.isNotEmpty) {
-                      Get.to(() =>
-                          _PDFViewerPage(url: fileEbook, isPreview: false));
-                    } else {
-                      Get.defaultDialog(
-                        title: 'Info',
-                        middleText: 'File ebook belum tersedia',
-                        textConfirm: 'OK',
-                        confirmTextColor: Colors.white,
-                        onConfirm: () => Get.back(),
-                      );
-                    }
-                  },
-                  child: Center(
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(
-                          Icons.menu_book,
-                          color: Colors.white,
-                          size: 20,
-                        ),
-                        const SizedBox(width: 8),
-                        const Text(
-                          'Baca Buku',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
+                  const SizedBox(width: 6),
+                  const Text(
+                    'Baca Buku',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
-                ),
+                ],
               ),
             ),
           ),
-
-          // Divider
-          Container(
-            width: 1,
-            height: 40,
-            color: Colors.grey[300],
-          ),
-
-          // Tombol kedua berdasarkan status rating
-          Expanded(
-            child: Container(
-              height: 60,
-              decoration: BoxDecoration(
-                color: hasUserReviewed ? Colors.green : Colors.orange,
-                borderRadius: const BorderRadius.only(
-                  topRight: Radius.circular(12),
-                  bottomRight: Radius.circular(12),
-                ),
-              ),
-              child: Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  borderRadius: const BorderRadius.only(
-                    topRight: Radius.circular(12),
-                    bottomRight: Radius.circular(12),
-                  ),
-                  onTap: () {
-                    if (hasUserReviewed) {
-                      // Jika sudah rating, tampilkan bonus buku
-                      Get.defaultDialog(
-                        title: 'Bonus Buku',
-                        middleText: 'Bonus buku akan segera tersedia!',
-                        textConfirm: 'OK',
-                        confirmTextColor: Colors.white,
-                        onConfirm: () => Get.back(),
-                      );
-                    } else {
-                      // Jika belum rating, scroll ke form review
-                      scrollController.animateTo(
-                        scrollController.position.maxScrollExtent,
-                        duration: const Duration(milliseconds: 500),
-                        curve: Curves.easeInOut,
-                      );
-                    }
-                  },
-                  child: Center(
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          hasUserReviewed ? Icons.card_giftcard : Icons.star,
-                          color: Colors.white,
-                          size: 20,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          hasUserReviewed ? 'Bonus Buku' : 'Beri Rating',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -658,7 +559,7 @@ class BookDetailPage extends StatelessWidget {
   Widget _buildPurchaseButtons(Map<String, dynamic> data, bool adaDiskon,
       dynamic hargaAkhir, dynamic hargaOriginal, String? kodeAfiliasi) {
     return Container(
-      height: 60,
+      height: 50,
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
@@ -674,8 +575,8 @@ class BookDetailPage extends StatelessWidget {
         children: [
           // Icon Keranjang
           Container(
-            width: 60,
-            height: 60,
+            width: 50,
+            height: 50,
             decoration: BoxDecoration(
               color: Colors.teal,
               borderRadius: const BorderRadius.only(
@@ -696,7 +597,7 @@ class BookDetailPage extends StatelessWidget {
                       : const Icon(
                           Icons.shopping_cart,
                           color: Colors.white,
-                          size: 24,
+                          size: 20,
                         ),
                   onPressed: cartController.isAddingToCart.value
                       ? null
@@ -760,14 +661,14 @@ class BookDetailPage extends StatelessWidget {
           // Divider
           Container(
             width: 1,
-            height: 40,
+            height: 35,
             color: Colors.grey[300],
           ),
 
           // Icon Preview
           Container(
-            width: 60,
-            height: 60,
+            width: 50,
+            height: 50,
             decoration: BoxDecoration(
               color: Colors.teal,
             ),
@@ -775,7 +676,7 @@ class BookDetailPage extends StatelessWidget {
               icon: const Icon(
                 Icons.menu_book,
                 color: Colors.white,
-                size: 24,
+                size: 20,
               ),
               onPressed: () {
                 final fileEbookPreview =
@@ -800,14 +701,14 @@ class BookDetailPage extends StatelessWidget {
           // Divider
           Container(
             width: 1,
-            height: 40,
+            height: 35,
             color: Colors.grey[300],
           ),
 
           // Tombol Beli Sekarang
           Expanded(
             child: Container(
-              height: 60,
+              height: 50,
               decoration: BoxDecoration(
                 color: Colors.orange,
                 borderRadius: const BorderRadius.only(
@@ -847,17 +748,17 @@ class BookDetailPage extends StatelessWidget {
                           'Beli Sekarang',
                           style: TextStyle(
                             color: Colors.white,
-                            fontSize: 14,
+                            fontSize: 13,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        const SizedBox(height: 2),
+                        const SizedBox(height: 1),
                         Text(
                           _formatCurrency(
                               adaDiskon ? hargaAkhir : hargaOriginal),
                           style: const TextStyle(
                             color: Colors.white,
-                            fontSize: 12,
+                            fontSize: 11,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -916,160 +817,66 @@ class _ExpandableTextState extends State<_ExpandableText> {
   }
 }
 
-class _ReviewForm extends StatefulWidget {
-  final String idEbook;
-  const _ReviewForm({required this.idEbook});
-
-  @override
-  State<_ReviewForm> createState() => _ReviewFormState();
-}
-
-class _ReviewFormState extends State<_ReviewForm> {
-  int rating = 0;
-  final TextEditingController reviewController = TextEditingController();
-  bool isHide = false;
-
-  @override
-  Widget build(BuildContext context) {
-    final BookDetailController controller = Get.find<BookDetailController>();
-    return Card(
-      margin: const EdgeInsets.only(top: 12, bottom: 16),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('Beri Rating & Review',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-            const SizedBox(height: 8),
-            Row(
-              children: List.generate(
-                  5,
-                  (i) => IconButton(
-                        icon: Icon(
-                          i < rating ? Icons.star : Icons.star_border,
-                          color: Colors.amber,
-                          size: 32,
-                        ),
-                        onPressed: () => setState(() => rating = i + 1),
-                      )),
-            ),
-            TextField(
-              controller: reviewController,
-              decoration: const InputDecoration(
-                labelText: 'Tulis review (opsional)',
-                border: OutlineInputBorder(),
-              ),
-              minLines: 2,
-              maxLines: 4,
-            ),
-            Row(
-              children: [
-                Checkbox(
-                  value: isHide,
-                  onChanged: (v) => setState(() => isHide = v ?? true),
-                ),
-                const Text('Sembunyikan nama saya'),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Obx(() => SizedBox(
-                  width: double.infinity,
-                  height: 48,
-                  child: ElevatedButton.icon(
-                    icon: controller.loadingReview.value
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                                strokeWidth: 2, color: Colors.white))
-                        : const Icon(Icons.star, color: Colors.white),
-                    label: Text(
-                      'Kirim',
-                      style: const TextStyle(
-                          fontSize: 16, fontWeight: FontWeight.bold),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      elevation: 2,
-                      shadowColor: Colors.blue.withOpacity(0.2),
-                    ),
-                    onPressed: controller.loadingReview.value
-                        ? null
-                        : () async {
-                            if (rating == 0) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                    content:
-                                        Text('Pilih rating terlebih dahulu!')),
-                              );
-                              return;
-                            }
-                            final res = await controller.submitReview(
-                              idEbook: widget.idEbook,
-                              rating: rating,
-                              description: reviewController.text.trim(),
-                              isHide: isHide ? 1 : 0,
-                            );
-                            if (res != null && res['status'] == true) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                    content: Text('Buku berhasil direview')),
-                              );
-                              setState(() {
-                                rating = 0;
-                                reviewController.clear();
-                                isHide = false;
-                              });
-                            } else {
-                              final msg =
-                                  res?['message'] ?? 'Gagal mengirim review';
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      const Text('Buku gagal di review'),
-                                      Text(msg,
-                                          style: const TextStyle(fontSize: 13)),
-                                    ],
-                                  ),
-                                ),
-                              );
-                            }
-                          },
-                  ),
-                )),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 // Tambahkan widget _PDFViewerPage di bawah file ini
-class _PDFViewerPage extends StatelessWidget {
+class _PDFViewerPage extends StatefulWidget {
   final String url;
   final bool isPreview;
   const _PDFViewerPage({required this.url, this.isPreview = false});
 
   @override
+  State<_PDFViewerPage> createState() => _PDFViewerPageState();
+}
+
+class _PDFViewerPageState extends State<_PDFViewerPage> {
+  @override
+  void initState() {
+    super.initState();
+    // Enable screenshot protection saat halaman dibuka
+    _enableScreenshotProtection();
+  }
+
+  @override
+  void dispose() {
+    // Disable screenshot protection saat halaman ditutup
+    _disableScreenshotProtection();
+    super.dispose();
+  }
+
+  static const MethodChannel _channel =
+      MethodChannel('com.andi.digital.andi_digital/screenshot');
+
+  Future<void> _enableScreenshotProtection() async {
+    try {
+      if (Platform.isAndroid) {
+        await _channel.invokeMethod('enableScreenshotProtection');
+      }
+    } catch (e) {
+      print('Error enabling screenshot protection: $e');
+    }
+  }
+
+  Future<void> _disableScreenshotProtection() async {
+    try {
+      if (Platform.isAndroid) {
+        await _channel.invokeMethod('disableScreenshotProtection');
+      }
+    } catch (e) {
+      print('Error disabling screenshot protection: $e');
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final pdfUrl = url.startsWith('http') ? url : 'http://$url';
+    final pdfUrl =
+        widget.url.startsWith('http') ? widget.url : 'http://${widget.url}';
     return Scaffold(
       appBar: AppBar(
-        title: Text(isPreview ? 'Preview Buku' : 'Baca Buku'),
+        title: Text(widget.isPreview ? 'Preview Buku' : 'Baca Buku'),
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
         elevation: 0,
         actions: [
-          if (isPreview)
+          if (widget.isPreview)
             Container(
               margin: const EdgeInsets.only(right: 16),
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -1096,7 +903,7 @@ class _PDFViewerPage extends StatelessWidget {
           print('PDF Load Error: ${details.error}');
           Get.snackbar(
             'Error',
-            'Gagal memuat ${isPreview ? 'preview' : 'buku'}',
+            'Gagal memuat ${widget.isPreview ? 'preview' : 'buku'}',
             backgroundColor: Colors.red,
             colorText: Colors.white,
           );
@@ -1314,6 +1121,75 @@ class _BookInfoSectionState extends State<_BookInfoSection> {
             ),
         ],
       ),
+    );
+  }
+}
+
+class _BonusBooksSection extends StatelessWidget {
+  final List<dynamic> bonusBooks;
+  const _BonusBooksSection({required this.bonusBooks});
+
+  String _getFileNameFromUrl(String url) {
+    try {
+      final uri = Uri.parse(url);
+      final path = uri.path;
+      final fileName = path.split('/').last;
+      final cleanFileName = fileName.split('?').first;
+      final displayName = cleanFileName
+          .replaceAll('-', ' ')
+          .replaceAll('_', ' ')
+          .replaceAll('.pdf', '');
+      return displayName.isNotEmpty ? displayName : 'Bonus Buku';
+    } catch (e) {
+      return 'Bonus Buku';
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bonusUrls = bonusBooks
+        .where((url) => url != null && url.toString().isNotEmpty)
+        .map((url) => url.toString())
+        .toList();
+
+    if (bonusUrls.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Column(
+      children: bonusUrls.asMap().entries.map((entry) {
+        final index = entry.key;
+        final url = entry.value;
+        final fileName = _getFileNameFromUrl(url);
+        return Card(
+          margin:
+              EdgeInsets.only(bottom: index < bonusUrls.length - 1 ? 12 : 0),
+          child: ListTile(
+            leading: const Icon(
+              Icons.picture_as_pdf,
+              color: Colors.red,
+              size: 32,
+            ),
+            title: Text(
+              fileName,
+              style: const TextStyle(
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            subtitle: Text(
+              'Bonus ${index + 1}',
+              style: TextStyle(
+                color: Colors.grey[600],
+                fontSize: 12,
+              ),
+            ),
+            trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+            onTap: () {
+              Get.to(() => _PDFViewerPage(url: url, isPreview: false));
+            },
+          ),
+        );
+      }).toList(),
     );
   }
 }

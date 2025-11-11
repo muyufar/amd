@@ -60,7 +60,7 @@ class _MidtransPageState extends State<MidtransPage> {
 
     return WillPopScope(
       onWillPop: () async {
-        return false;
+        return true;
       },
       child: Scaffold(
         appBar: AppBar(

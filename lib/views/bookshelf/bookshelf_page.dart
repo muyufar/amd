@@ -6,6 +6,8 @@ import 'bookshelf_detail_page.dart';
 import '../../widgets/loading_animations.dart';
 import '../../services/book_service.dart';
 import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
+import 'package:flutter/services.dart';
+import 'dart:io' show Platform;
 
 class BookshelfPage extends StatefulWidget {
   const BookshelfPage({super.key});
@@ -414,13 +416,56 @@ class _BookshelfPageState extends State<BookshelfPage>
   }
 }
 
-class _BonusPDFViewerPage extends StatelessWidget {
+class _BonusPDFViewerPage extends StatefulWidget {
   final String url;
   const _BonusPDFViewerPage({required this.url});
 
   @override
+  State<_BonusPDFViewerPage> createState() => _BonusPDFViewerPageState();
+}
+
+class _BonusPDFViewerPageState extends State<_BonusPDFViewerPage> {
+  @override
+  void initState() {
+    super.initState();
+    // Enable screenshot protection saat halaman dibuka
+    _enableScreenshotProtection();
+  }
+
+  @override
+  void dispose() {
+    // Disable screenshot protection saat halaman ditutup
+    _disableScreenshotProtection();
+    super.dispose();
+  }
+
+  static const MethodChannel _channel =
+      MethodChannel('com.andi.digital.andi_digital/screenshot');
+
+  Future<void> _enableScreenshotProtection() async {
+    try {
+      if (Platform.isAndroid) {
+        await _channel.invokeMethod('enableScreenshotProtection');
+      }
+    } catch (e) {
+      print('Error enabling screenshot protection: $e');
+    }
+  }
+
+  Future<void> _disableScreenshotProtection() async {
+    try {
+      if (Platform.isAndroid) {
+        await _channel.invokeMethod('disableScreenshotProtection');
+      }
+    } catch (e) {
+      print('Error disabling screenshot protection: $e');
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final pdfUrl = url.startsWith('http') ? url : 'http://$url';
+    final pdfUrl =
+        widget.url.startsWith('http') ? widget.url : 'http://${widget.url}';
     return Scaffold(
       appBar: AppBar(title: const Text('Baca Bonus Buku')),
       body: SfPdfViewer.network(
