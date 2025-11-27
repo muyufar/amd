@@ -747,19 +747,13 @@ class CheckoutPage extends StatelessWidget {
         return;
       }
 
-      // Prepare transaction body for direct purchase
-      final body = {
-        'user': {
-          'usePoinUser': false,
-        },
-        'dataCheckout': [
+      // Prepare transaction body for direct purchase (new format)
+      final body = <String, dynamic>{
+        'user': <String, dynamic>{},
+        'data_checkout': [
           {
-            'products': [
-              {
-                'idProduct': idBarang,
-                'isBuy': true,
-              }
-            ]
+            'id_product': idBarang,
+            'is_buy': 1,
           }
         ],
       };
@@ -768,6 +762,14 @@ class CheckoutPage extends StatelessWidget {
       if (kodeAfiliasi != null && kodeAfiliasi.isNotEmpty) {
         body['voucherCode'] = kodeAfiliasi;
       }
+      
+      // Optional: Add use_poin_user if needed (uncomment if needed)
+      // body['user']['use_poin_user'] = 1;
+      
+      // Optional: Add ref (affiliate code) if needed (uncomment if needed)
+      // if (kodeAfiliasi != null && kodeAfiliasi.isNotEmpty) {
+      //   body['user']['ref'] = kodeAfiliasi;
+      // }
 
       print('🔵 [DIRECT CHECKOUT] Pay with Midtrans with body: $body');
 

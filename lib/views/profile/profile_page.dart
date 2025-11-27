@@ -56,7 +56,7 @@ class ProfilePage extends StatelessWidget {
                 onPressed: () async {
                   final token = GetStorage().read('token');
                   final bool isLoggedIn =
-                      token != null && (!(token is String) || token.isNotEmpty);
+                      token != null && (token is! String || token.isNotEmpty);
                   if (!isLoggedIn) {
                     Get.toNamed('/login');
                     return;
@@ -94,19 +94,19 @@ class ProfilePage extends StatelessWidget {
                 icon: Builder(builder: (context) {
                   final token = GetStorage().read('token');
                   final bool isLoggedIn =
-                      token != null && (!(token is String) || token.isNotEmpty);
+                      token != null && (token is! String || token.isNotEmpty);
                   return Icon(isLoggedIn ? Icons.logout : Icons.login);
                 }),
                 label: Builder(builder: (context) {
                   final token = GetStorage().read('token');
                   final bool isLoggedIn =
-                      token != null && (!(token is String) || token.isNotEmpty);
+                      token != null && (token is! String || token.isNotEmpty);
                   return Text(isLoggedIn ? 'Logout' : 'Login');
                 }),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: colorPrimary,
                   foregroundColor: Colors.white,
-                  padding: EdgeInsets.symmetric(vertical: 12),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
@@ -122,8 +122,8 @@ class ProfilePage extends StatelessWidget {
                   leading: const Icon(Icons.phone),
                   title: const Text('Kontak Kami'),
                   onTap: () async {
-                    final String phone = '628112860877';
-                    final String message =
+                    const String phone = '628112860877';
+                    const String message =
                         'Hai eBook AMD! Saya butuh bantuan CS';
                     final Uri waUri = Uri.parse(
                         'https://wa.me/$phone?text=${Uri.encodeComponent(message)}');
@@ -173,8 +173,8 @@ class ProfilePage extends StatelessWidget {
                   leading: const Icon(Icons.person_remove_outlined),
                   title: const Text('Hapus Akun'),
                   onTap: () async {
-                    final String phone = '628112860877';
-                    final String message =
+                    const String phone = '628112860877';
+                    const String message =
                         'Hai eBook AMD! Saya ingin menghapus akun saya';
                     final Uri waUri = Uri.parse(
                         'https://wa.me/$phone?text=${Uri.encodeComponent(message)}');
@@ -200,7 +200,7 @@ class ProfilePage extends StatelessWidget {
                     if (token == null || (token is String && token.isEmpty)) {
                       Get.toNamed('/login');
                     } else {
-                      Get.dialog(BonusClaimDialog());
+                      Get.dialog(const BonusClaimDialog());
                     }
                   },
                 ),

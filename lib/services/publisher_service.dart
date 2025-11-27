@@ -31,7 +31,26 @@ class PublisherService {
         final result = jsonDecode(response.body);
         if (result['status'] == true && result['data'] != null) {
           print('✅ [PUBLISHER SERVICE] Publishers loaded successfully');
-          return result['data'];
+          final data = result['data'];
+          
+          // Handle new format: data is Map with list and total
+          if (data is Map<String, dynamic>) {
+            return data;
+          } 
+          // Handle old format: data is directly a List
+          else if (data is List) {
+            return {
+              'list': data,
+              'total': data.length,
+            };
+          }
+          // Fallback: wrap in Map
+          else {
+            return {
+              'list': [],
+              'total': 0,
+            };
+          }
         } else {
           throw Exception(result['message'] ?? 'Gagal mengambil data penerbit');
         }
@@ -68,7 +87,26 @@ class PublisherService {
         final result = jsonDecode(response.body);
         if (result['status'] == true && result['data'] != null) {
           print('✅ [PUBLISHER SERVICE] Imprints loaded successfully');
-          return result['data'];
+          final data = result['data'];
+          
+          // Handle new format: data is Map with list and total
+          if (data is Map<String, dynamic>) {
+            return data;
+          } 
+          // Handle old format: data is directly a List
+          else if (data is List) {
+            return {
+              'list': data,
+              'total': data.length,
+            };
+          }
+          // Fallback: wrap in Map
+          else {
+            return {
+              'list': [],
+              'total': 0,
+            };
+          }
         } else {
           throw Exception(result['message'] ?? 'Gagal mengambil data imprint');
         }

@@ -80,6 +80,7 @@ class SearchController extends GetxController {
       _currentPage.value = 0;
       _hasMoreData.value = true;
 
+      print('🔍 [SEARCH] Starting search for: ${_keyword.value}');
       final response = await _searchService.searchBooks(
         keyword: _keyword.value,
         limit: _limit.value,
@@ -93,18 +94,65 @@ class SearchController extends GetxController {
         hargaMin: _filters['hargaMin'],
       );
 
-      if (response['status'] == true) {
-        final List<Map<String, dynamic>> fetched =
-            List<Map<String, dynamic>>.from(response['data']['list'] ?? []);
+      print('🔍 [SEARCH] Response status: ${response['status']} (type: ${response['status'].runtimeType})');
+      print('🔍 [SEARCH] Response data type: ${response['data']?.runtimeType}');
+      
+      // Check status flexibly - could be true, "true", 1, "success", etc.
+      final status = response['status'];
+      final isSuccess = status == true || 
+                        status == 'true' || 
+                        status == 1 || 
+                        status == '1' ||
+                        status == 'success';
+      print('🔍 [SEARCH] Is success: $isSuccess');
+      
+      if (isSuccess && response['data'] != null) {
+        final data = response['data'];
+        print('🔍 [SEARCH] Data type: ${data.runtimeType}');
+        
+        final List<Map<String, dynamic>> fetched = [];
+        int total = 0;
+        
+        // Handle different response formats
+        if (data is Map<String, dynamic>) {
+          // Format: { data: { list: [...], total: N } }
+          final listData = data['list'] ?? data['items'] ?? data['books'] ?? data['results'];
+          print('🔍 [SEARCH] List data from map: ${listData?.runtimeType}');
+          
+          if (listData is List) {
+            print('🔍 [SEARCH] List length: ${listData.length}');
+            for (var item in listData) {
+              if (item is Map) {
+                fetched.add(Map<String, dynamic>.from(item));
+              }
+            }
+          }
+          total = _parseInt(data['total'] ?? data['count'] ?? listData?.length ?? 0);
+        } else if (data is List) {
+          // Format: { data: [...] } - data is directly a list
+          print('🔍 [SEARCH] Data is directly a List with ${data.length} items');
+          for (var item in data) {
+            if (item is Map) {
+              fetched.add(Map<String, dynamic>.from(item));
+            }
+          }
+          total = fetched.length;
+        }
+        
         _searchResults.value = _dedupeList(fetched, existingKeys: {});
-        _totalResults.value = response['data']['total'] ?? 0;
+        _totalResults.value = total;
+        print('🔍 [SEARCH] Fetched ${fetched.length} results, total: $_totalResults');
       } else {
+        print('🔴 [SEARCH] Status not success or data is null');
+        print('🔴 [SEARCH] Response: $response');
         _errorMessage.value =
-            response['message'] ?? 'Gagal melakukan pencarian';
+            response['message']?.toString() ?? 'Gagal melakukan pencarian';
         _searchResults.clear();
         _totalResults.value = 0;
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      print('🔴 [SEARCH] Error: $e');
+      print('🔴 [SEARCH] Stack trace: $stackTrace');
       _errorMessage.value = e.toString();
       _searchResults.clear();
       _totalResults.value = 0;
@@ -120,8 +168,9 @@ class SearchController extends GetxController {
 
   // Load more results
   Future<void> loadMoreResults() async {
-    if (!_hasMoreData.value || _isLoading.value || _keyword.value.isEmpty)
+    if (!_hasMoreData.value || _isLoading.value || _keyword.value.isEmpty) {
       return;
+    }
 
     try {
       _isLoading.value = true;
@@ -140,9 +189,30 @@ class SearchController extends GetxController {
         hargaMin: _filters['hargaMin'],
       );
 
-      if (response['status'] == true) {
-        final List<Map<String, dynamic>> newResults =
-            List<Map<String, dynamic>>.from(response['data']['list'] ?? []);
+      final status = response['status'];
+      final isSuccess = status == true || status == 'true' || status == 1 || status == '1' || status == 'success';
+      
+      if (isSuccess && response['data'] != null) {
+        final data = response['data'];
+        final List<Map<String, dynamic>> newResults = [];
+        
+        if (data is Map<String, dynamic>) {
+          final listData = data['list'] ?? data['items'] ?? data['books'] ?? data['results'];
+          if (listData is List) {
+            for (var item in listData) {
+              if (item is Map) {
+                newResults.add(Map<String, dynamic>.from(item));
+              }
+            }
+          }
+        } else if (data is List) {
+          for (var item in data) {
+            if (item is Map) {
+              newResults.add(Map<String, dynamic>.from(item));
+            }
+          }
+        }
+        
         if (newResults.isEmpty) {
           _hasMoreData.value = false;
         } else {
@@ -187,13 +257,16 @@ class SearchController extends GetxController {
         hargaMin: _filters['hargaMin'],
       );
 
-      if (response['status'] == true) {
-        _kategoriOptions.value =
-            List<Map<String, dynamic>>.from(response['data']['kategori'] ?? []);
-        _penulisOptions.value =
-            List<Map<String, dynamic>>.from(response['data']['penulis'] ?? []);
-        _penerbitOptions.value =
-            List<Map<String, dynamic>>.from(response['data']['penerbit'] ?? []);
+      final status = response['status'];
+      final isSuccess = status == true || status == 'true' || status == 1 || status == '1' || status == 'success';
+      
+      if (isSuccess && response['data'] != null) {
+        final data = response['data'];
+        if (data is Map<String, dynamic>) {
+          _kategoriOptions.value = _parseListOfMaps(data['kategori']);
+          _penulisOptions.value = _parseListOfMaps(data['penulis']);
+          _penerbitOptions.value = _parseListOfMaps(data['penerbit']);
+        }
       }
     } catch (e) {
       print('Error loading filters: $e');
@@ -219,6 +292,30 @@ class SearchController extends GetxController {
     _kategoriOptions.clear();
     _penulisOptions.clear();
     _penerbitOptions.clear();
+  }
+
+  // Helper: parse int from dynamic (String, int, etc)
+  int _parseInt(dynamic value) {
+    if (value == null) return 0;
+    if (value is int) return value;
+    if (value is String) {
+      final cleaned = value.replaceAll('.', '').replaceAll(',', '').trim();
+      return int.tryParse(cleaned) ?? 0;
+    }
+    return int.tryParse(value.toString()) ?? 0;
+  }
+
+  // Helper: safely parse List of Maps
+  List<Map<String, dynamic>> _parseListOfMaps(dynamic data) {
+    final List<Map<String, dynamic>> result = [];
+    if (data is List) {
+      for (var item in data) {
+        if (item is Map) {
+          result.add(Map<String, dynamic>.from(item));
+        }
+      }
+    }
+    return result;
   }
 
   // Helpers: build unique keys and dedupe lists by a stable key

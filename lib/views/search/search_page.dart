@@ -130,7 +130,7 @@ class SearchPage extends StatelessWidget {
                 const SizedBox(height: 16),
                 ElevatedButton(
                   onPressed: () => controller.setKeyword(controller.keyword),
-                  child: Text('Coba Lagi'),
+                  child: const Text('Coba Lagi'),
                 ),
               ],
             ),
@@ -281,7 +281,7 @@ class SearchPage extends StatelessWidget {
                     )
                   : ElevatedButton(
                       onPressed: () => controller.loadMoreResults(),
-                      child: Text('Muat Lebih Banyak'),
+                      child: const Text('Muat Lebih Banyak'),
                     ),
             ),
           );
@@ -309,12 +309,13 @@ class SearchPage extends StatelessWidget {
   }
 
   Widget _buildBookCard(Map<String, dynamic> book) {
-    final double rating =
-        double.tryParse(book['rating']?.toString() ?? '0') ?? 0.0;
-    final int harga = _parseInt(book['harga']);
-    final int diskon = _parseInt(book['diskon']);
-    final int diskonPrice = _parseInt(book['diskon_price']);
-    final bool hasDiscount = diskon > 0 && diskonPrice > 0;
+    try {
+      final double rating =
+          double.tryParse(book['rating']?.toString() ?? '0') ?? 0.0;
+      final int harga = _parseInt(book['harga']);
+      final int diskon = _parseInt(book['diskon']);
+      final int diskonPrice = _parseInt(book['diskon_price']);
+      final bool hasDiscount = diskon > 0 && diskonPrice > 0;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -448,15 +449,23 @@ class SearchPage extends StatelessWidget {
         ),
       ),
     );
+    } catch (e) {
+      print('🔴 [SEARCH PAGE] Error building book card: $e');
+      return Container(
+        margin: const EdgeInsets.only(bottom: 16),
+        padding: const EdgeInsets.all(16),
+        child: Text('Error: $e'),
+      );
+    }
   }
 
   void _showFilterBottomSheet(search_controller.SearchController controller) {
     Get.bottomSheet(
       Container(
         height: MediaQuery.of(Get.context!).size.height * 0.7,
-        decoration: BoxDecoration(
+        decoration: const BoxDecoration(
           color: Colors.white,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
         ),
         child: Column(
           children: [
@@ -487,7 +496,7 @@ class SearchPage extends StatelessWidget {
                       controller.clearAllFilters();
                       Get.back();
                     },
-                    child: Text('Reset'),
+                    child: const Text('Reset'),
                   ),
                 ],
               ),
@@ -525,8 +534,8 @@ class SearchPage extends StatelessWidget {
                       'Kategori',
                       controller.kategoriOptions
                           .map((kategori) => {
-                                'value': kategori['id'],
-                                'label': kategori['name'],
+                                'value': kategori['id']?.toString() ?? '',
+                                'label': kategori['name']?.toString() ?? '-',
                               })
                           .toList(),
                       controller.filters['kategori'],
@@ -538,9 +547,9 @@ class SearchPage extends StatelessWidget {
                       'Penulis',
                       controller.penulisOptions
                           .map((penulis) => {
-                                'value': penulis['id'],
+                                'value': penulis['id']?.toString() ?? '',
                                 'label':
-                                    '${penulis['name']} (${penulis['count']})',
+                                    '${penulis['name'] ?? '-'} (${penulis['count'] ?? 0})',
                               })
                           .toList(),
                       controller.filters['penulis'],
@@ -550,7 +559,7 @@ class SearchPage extends StatelessWidget {
                         if (currentPenulis.contains(value)) {
                           currentPenulis.remove(value);
                         } else {
-                          currentPenulis.add(value);
+                          currentPenulis.add(value.toString());
                         }
                         controller.setFilter('penulis', currentPenulis);
                       },
@@ -562,9 +571,9 @@ class SearchPage extends StatelessWidget {
                       'Penerbit',
                       controller.penerbitOptions
                           .map((penerbit) => {
-                                'value': penerbit['id'],
+                                'value': penerbit['id']?.toString() ?? '',
                                 'label':
-                                    '${penerbit['name'] ?? 'Tidak diketahui'} (${penerbit['count']})',
+                                    '${penerbit['name'] ?? 'Tidak diketahui'} (${penerbit['count'] ?? 0})',
                               })
                           .toList(),
                       controller.filters['penerbit'],
@@ -609,7 +618,7 @@ class SearchPage extends StatelessWidget {
                     controller.loadFilters();
                     Get.back();
                   },
-                  child: Text('Terapkan Filter'),
+                  child: const Text('Terapkan Filter'),
                 ),
               ),
             ),

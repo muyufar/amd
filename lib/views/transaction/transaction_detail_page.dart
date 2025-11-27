@@ -147,9 +147,9 @@ class TransactionDetailPage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
+            const Text(
               'Informasi Transaksi',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
               ),
@@ -181,15 +181,15 @@ class TransactionDetailPage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
+            const Text(
               'Item Transaksi',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
               ),
             ),
             const SizedBox(height: 12),
-            ...items.map((item) => _buildItemCard(item)).toList(),
+            ...items.map((item) => _buildItemCard(item)),
           ],
         ),
       ),
@@ -293,9 +293,9 @@ class TransactionDetailPage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
+            const Text(
               'Rincian Harga',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
               ),
@@ -327,7 +327,7 @@ class TransactionDetailPage extends StatelessWidget {
     final paymentRedirect = transaksi['payment_redirect'];
     final statusTransaksi = transaksi['status_transaksi'];
     final statusTextRaw = transaksi['status'] ?? transaksi['status_text'];
-    final statusText = statusTextRaw?.toString()?.toLowerCase();
+    final statusText = statusTextRaw?.toString().toLowerCase();
 
     print('🔍 [TRANSACTION DETAIL] Building action buttons:');
     print('🔍 [TRANSACTION DETAIL] paymentRedirect: $paymentRedirect');
@@ -342,9 +342,12 @@ class TransactionDetailPage extends StatelessWidget {
 
     if (!isUnpaid) return const SizedBox.shrink();
 
+    // Check if status is 1 (unpaid) - handle both int and string
+    final isStatusOne = statusTransaksi == 1 || statusTransaksi == '1';
+
     return Column(
       children: [
-        if (statusTransaksi == '1' &&
+        if (isStatusOne &&
             paymentRedirect != null &&
             paymentRedirect.isNotEmpty) ...[
           // Bayar Sekarang button
@@ -382,7 +385,7 @@ class TransactionDetailPage extends StatelessWidget {
               ),
             ),
           ),
-        ] else if (statusTransaksi == '1') ...[
+        ] else if (isStatusOne) ...[
           // No payment URL available
           Container(
             padding: const EdgeInsets.all(16),
@@ -646,7 +649,7 @@ class TransactionDetailPage extends StatelessWidget {
                       return LinearProgressIndicator(
                         value: value,
                         backgroundColor: Colors.red[100],
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.red),
+                        valueColor: const AlwaysStoppedAnimation<Color>(Colors.red),
                         minHeight: 4,
                       );
                     },
@@ -881,12 +884,12 @@ class TransactionDetailPage extends StatelessWidget {
     }
   }
 
-  String _getStatusText(String? status) {
-    switch (status) {
+  String _getStatusText(dynamic status) {
+    // Convert to string if it's int
+    final statusStr = status?.toString();
+    switch (statusStr) {
       case '1':
         return 'Belum Dibayar';
-      case '3':
-        return 'Sudah Dibayar';
       case '3':
         return 'Selesai';
       case '4':

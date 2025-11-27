@@ -56,8 +56,16 @@ class SearchService {
       }
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        return data;
+        final decoded = jsonDecode(response.body);
+        // Ensure we return a Map<String, dynamic>
+        if (decoded is Map<String, dynamic>) {
+          return decoded;
+        } else if (decoded is Map) {
+          return Map<String, dynamic>.from(decoded);
+        } else {
+          print('🔴 [SEARCH SERVICE] Unexpected response type: ${decoded.runtimeType}');
+          return {'status': false, 'message': 'Invalid response format'};
+        }
       } else {
         throw Exception('Gagal melakukan pencarian: ${response.statusCode}');
       }
@@ -116,8 +124,16 @@ class SearchService {
       }
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        return data;
+        final decoded = jsonDecode(response.body);
+        // Ensure we return a Map<String, dynamic>
+        if (decoded is Map<String, dynamic>) {
+          return decoded;
+        } else if (decoded is Map) {
+          return Map<String, dynamic>.from(decoded);
+        } else {
+          print('🔴 [SEARCH SERVICE] Unexpected filters response type: ${decoded.runtimeType}');
+          return {'status': false, 'message': 'Invalid response format'};
+        }
       } else {
         throw Exception(
             'Gagal mengambil filter pencarian: ${response.statusCode}');

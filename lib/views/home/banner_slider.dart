@@ -5,7 +5,7 @@ import '../../services/banner_service.dart';
 class BannerSlider extends StatefulWidget {
   final bool square;
   final Function(String)? onBannerChanged;
-  BannerSlider({super.key, this.square = false, this.onBannerChanged});
+  const BannerSlider({super.key, this.square = false, this.onBannerChanged});
 
   @override
   State<BannerSlider> createState() => _BannerSliderState();
@@ -65,12 +65,12 @@ class _BannerSliderState extends State<BannerSlider> {
 
   void _startAutoSlide() {
     _timer?.cancel();
-    _timer = Timer.periodic(Duration(seconds: 5), (timer) {
+    _timer = Timer.periodic(const Duration(seconds: 5), (timer) {
       if (mounted && banners.isNotEmpty) {
         int nextIndex = (currentIndex + 1) % banners.length;
         _pageController?.animateToPage(
           nextIndex,
-          duration: Duration(milliseconds: 500),
+          duration: const Duration(milliseconds: 500),
           curve: Curves.easeInOut,
         );
       }
@@ -98,7 +98,7 @@ class _BannerSliderState extends State<BannerSlider> {
   @override
   Widget build(BuildContext context) {
     if (isLoading) {
-      return SizedBox(
+      return const SizedBox(
         height: 200,
         child: Center(
           child: CircularProgressIndicator(),
@@ -114,7 +114,7 @@ class _BannerSliderState extends State<BannerSlider> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(Icons.error_outline, color: Colors.grey[400]),
-              SizedBox(height: 8),
+              const SizedBox(height: 8),
               Text(
                 error!,
                 style: TextStyle(color: Colors.grey[600]),
@@ -156,7 +156,7 @@ class _BannerSliderState extends State<BannerSlider> {
                     print('Banner tapped: ${banner.link}');
                   }
                 },
-                child: Container(
+                child: SizedBox(
                   width: double.infinity,
                   height: 200,
                   child: widget.square

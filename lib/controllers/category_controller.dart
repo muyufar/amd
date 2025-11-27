@@ -67,13 +67,24 @@ class CategoryController extends GetxController {
       );
 
       if (response['status'] == true && response['data'] != null) {
-        final newCategories =
-            List<Map<String, dynamic>>.from(response['data']['list'] ?? []);
+        // Handle new format: data.list and data.total
+        final data = response['data'];
+        List<Map<String, dynamic>> newCategories = [];
+        
+        if (data is Map<String, dynamic>) {
+          // New format: data.list contains the array
+          if (data['list'] != null && data['list'] is List) {
+            newCategories = List<Map<String, dynamic>>.from(data['list']);
+          }
+        } else if (data is List) {
+          // Fallback: data is directly a list (old format)
+          newCategories = List<Map<String, dynamic>>.from(data);
+        }
 
         print(
             '🔄 [CATEGORY CONTROLLER] New categories received: ${newCategories.length}');
         print(
-            '🔄 [CATEGORY CONTROLLER] API total: ${response['data']['total']}');
+            '🔄 [CATEGORY CONTROLLER] API total: ${data is Map ? (data['total'] ?? 0) : newCategories.length}');
         print(
             '🔄 [CATEGORY CONTROLLER] Current list length before: ${parentCategories.length}');
 
@@ -90,7 +101,14 @@ class CategoryController extends GetxController {
               '🔄 [CATEGORY CONTROLLER] Added ${uniqueNewCategories.length} unique categories (${newCategories.length - uniqueNewCategories.length} duplicates skipped)');
         }
 
-        totalParentCategories.value = response['data']['total'] ?? 0;
+        // Get total from data.total (new format) or use list length as fallback
+        if (data is Map<String, dynamic> && data['total'] != null) {
+          totalParentCategories.value = data['total'] is int 
+              ? data['total'] 
+              : int.tryParse(data['total'].toString()) ?? newCategories.length;
+        } else {
+          totalParentCategories.value = newCategories.length;
+        }
 
         // Check if there are more data
         hasMoreData.value = newCategories.length >= limitPerPageParent;

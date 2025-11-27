@@ -4,7 +4,7 @@ import '../../controllers/category_controller.dart';
 import '../category/category_page.dart';
 
 class CategorySection extends StatelessWidget {
-  CategorySection({super.key});
+  const CategorySection({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -27,7 +27,7 @@ class CategorySection extends StatelessWidget {
                 ),
               ),
               TextButton(
-                onPressed: () => Get.to(() => CategoryPage()),
+                onPressed: () => Get.to(() => const CategoryPage()),
                 child: const Text('Lihat Semua'),
               ),
             ],
@@ -102,7 +102,7 @@ class CategorySection extends StatelessWidget {
       child: InkWell(
         onTap: () {
           if (hasChild) {
-            Get.to(() => CategoryPage());
+            Get.to(() => const CategoryPage());
           } else {
             _navigateToCategoryBooks(category);
           }
@@ -125,7 +125,7 @@ class CategorySection extends StatelessWidget {
                     color: Colors.blue.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(20),
                   ),
-                  child: Icon(
+                  child: const Icon(
                     Icons.category,
                     color: Colors.blue,
                     size: 20,

@@ -8,9 +8,17 @@ allprojects {
 rootProject.buildDir = '../build'
 subprojects {
     project.buildDir = "${rootProject.buildDir}/${project.name}"
-}
-subprojects {
     project.evaluationDependsOn(':app')
+    
+    project.plugins.whenPluginAdded { plugin ->
+        if (plugin.class.name == "com.android.build.gradle.LibraryPlugin") {
+            project.android {
+                if (namespace == null || namespace.isEmpty()) {
+                    namespace = project.group.toString()
+                }
+            }
+        }
+    }
 }
 
 tasks.register("clean", Delete) {

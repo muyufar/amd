@@ -36,11 +36,11 @@ class _HomePageState extends State<HomePage> {
   }
 
   final List<Widget> _pages = [
-    HomeContent(),
+    const HomeContent(),
     const _ProtectedPage(redirect: '/whislist', child: WishlistPage()),
     const _ProtectedPage(redirect: '/transaksi', child: TransactionPage()),
     const _ProtectedPage(redirect: '/bookshelf', child: BookshelfPage()),
-    ProfilePage(),
+    const ProfilePage(),
   ];
 
   @override
@@ -142,7 +142,7 @@ class _ProtectedPage extends StatelessWidget {
 }
 
 class HomeContent extends StatefulWidget {
-  HomeContent({super.key});
+  const HomeContent({super.key});
   @override
   State<HomeContent> createState() => _HomeContentState();
 }
@@ -171,7 +171,7 @@ class _HomeContentState extends State<HomeContent> {
       if (mounted) {
         setState(() {
           bannerColor = paletteGenerator.dominantColor?.color ??
-              Color.fromARGB(255, 255, 255, 255);
+              const Color.fromARGB(255, 255, 255, 255);
           bannerColor2 = paletteGenerator.colors.length > 1
               ? paletteGenerator.colors.elementAt(1)
               : bannerColor;
@@ -194,8 +194,8 @@ class _HomeContentState extends State<HomeContent> {
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                  bannerColor ?? Color.fromARGB(255, 255, 255, 255),
-                  bannerColor2 ?? Color.fromARGB(255, 255, 255, 255)
+                  bannerColor ?? const Color.fromARGB(255, 255, 255, 255),
+                  bannerColor2 ?? const Color.fromARGB(255, 255, 255, 255)
                 ],
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
@@ -204,7 +204,7 @@ class _HomeContentState extends State<HomeContent> {
                 BoxShadow(
                   color: Colors.black.withOpacity(0.08),
                   blurRadius: 8,
-                  offset: Offset(0, 2),
+                  offset: const Offset(0, 2),
                 ),
               ],
             ),
@@ -223,7 +223,7 @@ class _HomeContentState extends State<HomeContent> {
                           BoxShadow(
                             color: Colors.black.withOpacity(0.04),
                             blurRadius: 4,
-                            offset: Offset(0, 2),
+                            offset: const Offset(0, 2),
                           ),
                         ],
                       ),
@@ -273,7 +273,7 @@ class _HomeContentState extends State<HomeContent> {
                           BoxShadow(
                             color: Colors.black.withOpacity(0.04),
                             blurRadius: 4,
-                            offset: Offset(0, 2),
+                            offset: const Offset(0, 2),
                           ),
                         ],
                       ),
@@ -284,7 +284,7 @@ class _HomeContentState extends State<HomeContent> {
                                   color: Colors.grey[700], size: 20),
                               const SizedBox(width: 4),
                               Text('${cartController.cartCount}',
-                                  style: TextStyle(
+                                  style: const TextStyle(
                                       fontWeight: FontWeight.bold,
                                       fontSize: 14)),
                             ],
@@ -318,7 +318,7 @@ class _HomeContentState extends State<HomeContent> {
                             Expanded(
                               child: ElevatedButton(
                                 onPressed: () {
-                                  Get.to(() => CategoryPage());
+                                  Get.to(() => const CategoryPage());
                                 },
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: Colors.white,
@@ -338,7 +338,7 @@ class _HomeContentState extends State<HomeContent> {
                             Expanded(
                               child: ElevatedButton(
                                 onPressed: () {
-                                  Get.to(() => PublisherPage());
+                                  Get.to(() => const PublisherPage());
                                 },
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: Colors.white,
@@ -370,7 +370,7 @@ class _HomeContentState extends State<HomeContent> {
                                     ?.copyWith(fontWeight: FontWeight.bold)),
                             TextButton(
                               onPressed: () {
-                                Get.to(() => EbookListPage(
+                                Get.to(() => const EbookListPage(
                                       title: 'Ebook Terlaris',
                                       type: EbookListType.terlaris,
                                     ));
@@ -421,7 +421,7 @@ class _HomeContentState extends State<HomeContent> {
                                     ?.copyWith(fontWeight: FontWeight.bold)),
                             TextButton(
                               onPressed: () {
-                                Get.to(() => EbookListPage(
+                                Get.to(() => const EbookListPage(
                                       title: 'Ebook Terbaru',
                                       type: EbookListType.terbaru,
                                     ));
@@ -478,6 +478,40 @@ class _HomeContentState extends State<HomeContent> {
 class BookCard extends StatelessWidget {
   final Map<String, dynamic> buku;
   const BookCard({super.key, required this.buku});
+
+  // Helper: format harga - tampilkan diskon jika ada
+  String _getDisplayPrice(Map<String, dynamic> buku) {
+    final harga = buku['harga'];
+    final diskon = buku['diskon'];
+    final diskonPrice = buku['diskon_price'];
+    
+    // Cek apakah ada diskon
+    final hasDiscount = _parseInt(diskon) > 0 && _parseInt(diskonPrice) > 0;
+    
+    if (hasDiscount) {
+      return _formatPrice(diskonPrice);
+    }
+    return _formatPrice(harga);
+  }
+  
+  int _parseInt(dynamic value) {
+    if (value == null) return 0;
+    if (value is int) return value;
+    if (value is double) return value.toInt();
+    if (value is String) {
+      final cleaned = value.replaceAll('.', '').replaceAll(',', '').trim();
+      return int.tryParse(cleaned) ?? 0;
+    }
+    return 0;
+  }
+  
+  String _formatPrice(dynamic price) {
+    final intPrice = _parseInt(price);
+    return intPrice.toString().replaceAllMapped(
+      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+      (Match m) => '${m[1]}.',
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -554,9 +588,9 @@ class BookCard extends StatelessWidget {
                       ),
                     ),
 
-                    // Price
+                    // Price - tampilkan harga diskon jika ada
                     Text(
-                      'Rp ${buku['harga'] ?? '-'}',
+                      'Rp ${_getDisplayPrice(buku)}',
                       style: textTheme.bodyMedium?.copyWith(
                         color: colorBlack,
                         fontWeight: FontWeight.bold,

@@ -35,7 +35,7 @@ class AppPages {
     GetPage(name: AppRoutes.transaction, page: () => const TransactionPage()),
     GetPage(
         name: AppRoutes.category,
-        page: () => CategoryPage(),
+        page: () => const CategoryPage(),
         binding: CategoryBinding()),
     GetPage(
         name: AppRoutes.publisher,

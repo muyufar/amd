@@ -15,7 +15,6 @@ class HomeController extends GetxController {
   var currentPageTerbaru = 1.obs;
   var hasMoreTerbaru = true.obs;
   var isLoadingMoreTerbaru = false.obs;
-  final int limitPerPage = 20;
   
   // Pagination state untuk buku terlaris
   var currentPageTerlaris = 1.obs;
@@ -58,20 +57,20 @@ class HomeController extends GetxController {
     isLoadingTerbaru.value = true;
     errorTerbaru.value = '';
     try {
-      final offset = (currentPageTerbaru.value - 1) * limitPerPage;
-      print('🔵 [HOME CONTROLLER] Fetching buku terbaru... page: ${currentPageTerbaru.value}, offset: $offset');
-      final data = await _bookService.fetchBukuTerbaru(
-        limit: limitPerPage,
-        offset: offset,
+      print('🔵 [HOME CONTROLLER] Fetching buku terbaru... page: ${currentPageTerbaru.value}');
+      final response = await _bookService.fetchBukuTerbaru(
+        page: currentPageTerbaru.value,
       );
       
+      final List<Map<String, dynamic>> books = List<Map<String, dynamic>>.from(response['data'] ?? []);
+      
       if (reset) {
-        bukuTerbaru.value = data;
+        bukuTerbaru.value = books;
       } else {
-        bukuTerbaru.addAll(data);
+        bukuTerbaru.addAll(books);
       }
       
-      hasMoreTerbaru.value = data.length >= limitPerPage;
+      hasMoreTerbaru.value = response['has_more'] ?? false;
       print('🟢 [HOME CONTROLLER] Buku terbaru loaded: ${bukuTerbaru.length} items total, hasMore: ${hasMoreTerbaru.value}');
     } catch (e) {
       print('🔴 [HOME CONTROLLER] Error fetching buku terbaru: $e');
@@ -91,20 +90,20 @@ class HomeController extends GetxController {
     isLoadingTerlaris.value = true;
     errorTerlaris.value = '';
     try {
-      final offset = (currentPageTerlaris.value - 1) * limitPerPage;
-      print('🔵 [HOME CONTROLLER] Fetching buku terlaris... page: ${currentPageTerlaris.value}, offset: $offset');
-      final data = await _bookService.fetchBukuTerlaris(
-        limit: limitPerPage,
-        offset: offset,
+      print('🔵 [HOME CONTROLLER] Fetching buku terlaris... page: ${currentPageTerlaris.value}');
+      final response = await _bookService.fetchBukuTerlaris(
+        page: currentPageTerlaris.value,
       );
       
+      final List<Map<String, dynamic>> books = List<Map<String, dynamic>>.from(response['data'] ?? []);
+      
       if (reset) {
-        bukuTerlaris.value = List<Map<String, dynamic>>.from(data);
+        bukuTerlaris.value = books;
       } else {
-        bukuTerlaris.addAll(List<Map<String, dynamic>>.from(data));
+        bukuTerlaris.addAll(books);
       }
       
-      hasMoreTerlaris.value = data.length >= limitPerPage;
+      hasMoreTerlaris.value = response['has_more'] ?? false;
       print('🟢 [HOME CONTROLLER] Buku terlaris loaded: ${bukuTerlaris.length} items total, hasMore: ${hasMoreTerlaris.value}');
     } catch (e) {
       print('🔴 [HOME CONTROLLER] Error fetching buku terlaris: $e');
@@ -120,15 +119,14 @@ class HomeController extends GetxController {
     isLoadingMoreTerbaru.value = true;
     try {
       currentPageTerbaru.value++;
-      final offset = (currentPageTerbaru.value - 1) * limitPerPage;
-      print('🔵 [HOME CONTROLLER] Loading more buku terbaru... page: ${currentPageTerbaru.value}, offset: $offset');
-      final data = await _bookService.fetchBukuTerbaru(
-        limit: limitPerPage,
-        offset: offset,
+      print('🔵 [HOME CONTROLLER] Loading more buku terbaru... page: ${currentPageTerbaru.value}');
+      final response = await _bookService.fetchBukuTerbaru(
+        page: currentPageTerbaru.value,
       );
       
-      bukuTerbaru.addAll(data);
-      hasMoreTerbaru.value = data.length >= limitPerPage;
+      final List<Map<String, dynamic>> books = List<Map<String, dynamic>>.from(response['data'] ?? []);
+      bukuTerbaru.addAll(books);
+      hasMoreTerbaru.value = response['has_more'] ?? false;
       print('🟢 [HOME CONTROLLER] More buku terbaru loaded: ${bukuTerbaru.length} items total, hasMore: ${hasMoreTerbaru.value}');
     } catch (e) {
       print('🔴 [HOME CONTROLLER] Error loading more buku terbaru: $e');
@@ -144,15 +142,14 @@ class HomeController extends GetxController {
     isLoadingMoreTerlaris.value = true;
     try {
       currentPageTerlaris.value++;
-      final offset = (currentPageTerlaris.value - 1) * limitPerPage;
-      print('🔵 [HOME CONTROLLER] Loading more buku terlaris... page: ${currentPageTerlaris.value}, offset: $offset');
-      final data = await _bookService.fetchBukuTerlaris(
-        limit: limitPerPage,
-        offset: offset,
+      print('🔵 [HOME CONTROLLER] Loading more buku terlaris... page: ${currentPageTerlaris.value}');
+      final response = await _bookService.fetchBukuTerlaris(
+        page: currentPageTerlaris.value,
       );
       
-      bukuTerlaris.addAll(List<Map<String, dynamic>>.from(data));
-      hasMoreTerlaris.value = data.length >= limitPerPage;
+      final List<Map<String, dynamic>> books = List<Map<String, dynamic>>.from(response['data'] ?? []);
+      bukuTerlaris.addAll(books);
+      hasMoreTerlaris.value = response['has_more'] ?? false;
       print('🟢 [HOME CONTROLLER] More buku terlaris loaded: ${bukuTerlaris.length} items total, hasMore: ${hasMoreTerlaris.value}');
     } catch (e) {
       print('🔴 [HOME CONTROLLER] Error loading more buku terlaris: $e');

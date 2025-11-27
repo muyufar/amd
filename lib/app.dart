@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'routes/app_pages.dart';
 import 'controllers/auth_controller.dart';
-import 'package:uni_links/uni_links.dart';
+import 'package:app_links/app_links.dart';
 import 'dart:async';
 
 class MyApp extends StatefulWidget {
@@ -14,10 +14,12 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   StreamSubscription? _sub;
+  late AppLinks _appLinks;
 
   @override
   void initState() {
     super.initState();
+    _appLinks = AppLinks();
     // Panggil autoLogin dan cek token saat app start
     Future.delayed(Duration.zero, () {
       final authController = Get.put(AuthController(), permanent: true);
@@ -25,8 +27,8 @@ class _MyAppState extends State<MyApp> {
       authController.checkTokenAndLogoutIfExpired();
     });
     _handleInitialUri();
-    _sub = uriLinkStream.listen((Uri? uri) {
-      if (uri != null && uri.pathSegments.isNotEmpty) {
+    _sub = _appLinks.uriLinkStream.listen((Uri uri) {
+      if (uri.pathSegments.isNotEmpty) {
         _handleDeepLink(uri);
       }
     }, onError: (err) {
@@ -36,7 +38,7 @@ class _MyAppState extends State<MyApp> {
 
   Future<void> _handleInitialUri() async {
     try {
-      final uri = await getInitialUri();
+      final uri = await _appLinks.getInitialLink();
       if (uri != null && uri.pathSegments.isNotEmpty) {
         _handleDeepLink(uri);
       }

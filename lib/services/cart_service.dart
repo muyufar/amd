@@ -82,7 +82,7 @@ class CartService {
         if (ref != null) 'ref': ref,
       };
 
-      final response = await _request('POST', '/Cart/add', body: body);
+      final response = await _request('POST', '/cart/add', body: body);
 
       print(
           '🔵 [CART SERVICE] Add to cart response status: ${response.statusCode}');
@@ -107,7 +107,7 @@ class CartService {
   // Get cart items
   Future<List<CartBook>> getCartItems() async {
     try {
-      final response = await _request('GET', '/Cart');
+      final response = await _request('GET', '/cart');
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -219,7 +219,7 @@ class CartService {
   Future<Map<String, dynamic>?> removeFromCart(String idBarang) async {
     try {
       print('🔵 [CART SERVICE] Removing cart item with ID: $idBarang');
-      final response = await _request('DELETE', '/Cart/delete/$idBarang');
+      final response = await _request('DELETE', '/cart/delete/$idBarang');
 
       print('🔵 [CART SERVICE] Delete response status: ${response.statusCode}');
       print('🔵 [CART SERVICE] Delete response body: ${response.body}');
@@ -269,21 +269,22 @@ class CartService {
   Future<Map<String, dynamic>?> payWithMidtrans(List<String> ebookIds,
       {bool usePoinUser = false, String? voucherCode}) async {
     try {
-      final body = {
-        'user': {
-          'usePoinUser': usePoinUser,
-        },
-        'dataCheckout': [
-          {
-            'products': ebookIds
-                .map((id) => {
-                      'idProduct': id,
-                      'isBuy': true,
-                    })
-                .toList(),
-          }
-        ],
+      final body = <String, dynamic>{
+        'user': <String, dynamic>{},
+        'data_checkout': ebookIds
+            .map((id) => {
+                  'id_product': id,
+                  'is_buy': 1,
+                })
+            .toList(),
       };
+
+      // Add usePoinUser if true
+      if (usePoinUser) {
+        body['user'] = {
+          'usePoinUser': usePoinUser,
+        };
+      }
 
       // Add voucher code if provided
       if (voucherCode != null && voucherCode.isNotEmpty) {

@@ -491,7 +491,7 @@ class AuthController extends GetxController {
       print('🔴 [AUTH CONTROLLER] ===== EXCEPTION ERROR =====');
       print('🔴 [AUTH CONTROLLER] Error processing Google authentication: $e');
       print('🔴 [AUTH CONTROLLER] Exception type: ${e.runtimeType}');
-      throw e;
+      rethrow;
     }
   }
 

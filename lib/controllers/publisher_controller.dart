@@ -43,12 +43,30 @@ class PublisherController extends GetxController {
       currentOffset.value = 0;
 
       final result = await _service.getPublishers();
-      publishers.value = List<Map<String, dynamic>>.from(result['list'] ?? []);
-      totalPublishers.value = result['total'] ?? 0;
+      
+      // Handle new format: data.list and data.total
+      List<Map<String, dynamic>> newPublishers = [];
+      
+      // New format: result.list contains the array
+      if (result['list'] != null && result['list'] is List) {
+        newPublishers = List<Map<String, dynamic>>.from(result['list'] as List);
+      }
+      
+      publishers.value = newPublishers;
+      
+      // Get total from result.total (new format) or use list length as fallback
+      if (result['total'] != null) {
+        totalPublishers.value = result['total'] is int 
+            ? result['total'] as int
+            : int.tryParse(result['total'].toString()) ?? newPublishers.length;
+      } else {
+        totalPublishers.value = newPublishers.length;
+      }
+      
       hasMoreData.value = publishers.length < totalPublishers.value;
 
       print(
-          '✅ [PUBLISHER CONTROLLER] Publishers loaded: ${publishers.length} items');
+          '✅ [PUBLISHER CONTROLLER] Publishers loaded: ${publishers.length} items (total: ${totalPublishers.value})');
     } catch (e) {
       print('🔴 [PUBLISHER CONTROLLER] Error fetching publishers: $e');
       error.value = e.toString();
@@ -70,8 +88,14 @@ class PublisherController extends GetxController {
         limit: 10,
       );
 
-      final newPublishers =
-          List<Map<String, dynamic>>.from(result['list'] ?? []);
+      // Handle new format: data.list and data.total
+      List<Map<String, dynamic>> newPublishers = [];
+      
+      // New format: result.list contains the array
+      if (result['list'] != null && result['list'] is List) {
+        newPublishers = List<Map<String, dynamic>>.from(result['list'] as List);
+      }
+      
       publishers.addAll(newPublishers);
       hasMoreData.value = newPublishers.length >= 10;
 
@@ -98,7 +122,16 @@ class PublisherController extends GetxController {
       currentBookOffset.value = 0;
 
       final result = await _service.getImprints(publisherId);
-      imprints.value = List<Map<String, dynamic>>.from(result['list'] ?? []);
+      
+      // Handle new format: data.list and data.total
+      List<Map<String, dynamic>> newImprints = [];
+      
+      // New format: result.list contains the array
+      if (result['list'] != null && result['list'] is List) {
+        newImprints = List<Map<String, dynamic>>.from(result['list'] as List);
+      }
+      
+      imprints.value = newImprints;
 
       // Set selected publisher
       selectedPublisherId.value = publisherId;

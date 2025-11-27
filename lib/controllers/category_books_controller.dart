@@ -13,10 +13,6 @@ class CategoryBooksController extends GetxController {
   var categoryName = ''.obs;
   var categoryId = ''.obs;
 
-  @override
-  void onInit() {
-    super.onInit();
-  }
 
   // Fetch books by category
   Future<void> fetchBooksByCategory({
@@ -45,8 +41,18 @@ class CategoryBooksController extends GetxController {
       );
 
       if (response['status'] == true && response['data'] != null) {
-        final newBooks =
-            List<Map<String, dynamic>>.from(response['data']['value'] ?? []);
+        // Handle new API format: data is directly an array
+        // Or old format: data['value'] contains the array
+        List<Map<String, dynamic>> newBooks;
+        if (response['data'] is List) {
+          // New format: data is directly an array
+          newBooks = List<Map<String, dynamic>>.from(response['data']);
+        } else if (response['data'] is Map && response['data']['value'] != null) {
+          // Old format: data['value'] contains the array
+          newBooks = List<Map<String, dynamic>>.from(response['data']['value'] ?? []);
+        } else {
+          newBooks = [];
+        }
 
         print(
             '🔄 [CATEGORY BOOKS CONTROLLER] New books received: ${newBooks.length}');

@@ -62,7 +62,7 @@ class _BonusClaimDialogState extends State<BonusClaimDialog>
         // Show success dialog
         Get.dialog(
           AlertDialog(
-            title: Row(
+            title: const Row(
               children: [
                 Icon(Icons.check_circle, color: Colors.green),
                 SizedBox(width: 8),
@@ -77,7 +77,7 @@ class _BonusClaimDialogState extends State<BonusClaimDialog>
                   Get.back(); // Close input dialog
                   bonusController.clearSuccessMessage();
                 },
-                child: Text('OK'),
+                child: const Text('OK'),
               ),
             ],
           ),
@@ -98,8 +98,8 @@ class _BonusClaimDialogState extends State<BonusClaimDialog>
       title: Row(
         children: [
           Icon(Icons.card_giftcard, color: colorPrimary),
-          SizedBox(width: 8),
-          Text('Klaim Bonus'),
+          const SizedBox(width: 8),
+          const Text('Klaim Bonus'),
         ],
       ),
       content: SingleChildScrollView(
@@ -111,7 +111,7 @@ class _BonusClaimDialogState extends State<BonusClaimDialog>
               style: TextStyle(fontSize: 14, color: Colors.grey[600]),
               textAlign: TextAlign.center,
             ),
-            SizedBox(height: 16),
+            const SizedBox(height: 16),
             AnimatedBuilder(
               animation: _shakeAnimation,
               builder: (context, child) {
@@ -135,14 +135,14 @@ class _BonusClaimDialogState extends State<BonusClaimDialog>
                 );
               },
             ),
-            SizedBox(height: 8),
+            const SizedBox(height: 8),
             GetX<BonusController>(
               init: _bonusController ?? BonusController(),
               builder: (controller) {
                 if (controller.error.value.isNotEmpty) {
                   return Container(
                     width: double.infinity,
-                    padding: EdgeInsets.all(8),
+                    padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
                       color: Colors.red[50],
                       borderRadius: BorderRadius.circular(4),
@@ -157,7 +157,7 @@ class _BonusClaimDialogState extends State<BonusClaimDialog>
                     ),
                   );
                 }
-                return SizedBox.shrink();
+                return const SizedBox.shrink();
               },
             ),
           ],
@@ -173,7 +173,7 @@ class _BonusClaimDialogState extends State<BonusClaimDialog>
             }
             Get.back();
           },
-          child: Text('Batal'),
+          child: const Text('Batal'),
         ),
         GetX<BonusController>(
           init: _bonusController ?? BonusController(),
@@ -187,7 +187,7 @@ class _BonusClaimDialogState extends State<BonusClaimDialog>
               ),
             ),
             child: controller.isClaiming.value
-                ? SizedBox(
+                ? const SizedBox(
                     width: 20,
                     height: 20,
                     child: CircularProgressIndicator(
@@ -195,7 +195,7 @@ class _BonusClaimDialogState extends State<BonusClaimDialog>
                       color: Colors.white,
                     ),
                   )
-                : Text('Klaim'),
+                : const Text('Klaim'),
           ),
         ),
       ],

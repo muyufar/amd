@@ -64,7 +64,7 @@ class _BookshelfDetailPageState extends State<BookshelfDetailPage> {
       return;
     }
 
-    final bonusUrls = (fileBonusEbook as List)
+    final bonusUrls = (fileBonusEbook)
         .where((url) => url != null && url.toString().isNotEmpty)
         .map((url) => url.toString())
         .toList();
@@ -626,9 +626,9 @@ class _BookshelfDetailPageState extends State<BookshelfDetailPage> {
                                   Expanded(
                                     child: Container(
                                       height: 50,
-                                      decoration: BoxDecoration(
+                                      decoration: const BoxDecoration(
                                         color: Colors.blue,
-                                        borderRadius: const BorderRadius.only(
+                                        borderRadius: BorderRadius.only(
                                           topLeft: Radius.circular(12),
                                           bottomLeft: Radius.circular(12),
                                         ),
@@ -647,18 +647,18 @@ class _BookshelfDetailPageState extends State<BookshelfDetailPage> {
                                             Get.to(
                                                 () => _PDFViewerPage(url: url));
                                           },
-                                          child: Center(
+                                          child: const Center(
                                             child: Row(
                                               mainAxisAlignment:
                                                   MainAxisAlignment.center,
                                               children: [
-                                                const Icon(
+                                                Icon(
                                                   Icons.menu_book,
                                                   color: Colors.white,
                                                   size: 18,
                                                 ),
-                                                const SizedBox(width: 6),
-                                                const Text(
+                                                SizedBox(width: 6),
+                                                Text(
                                                   'Baca Ebook',
                                                   style: TextStyle(
                                                     color: Colors.white,
@@ -683,9 +683,9 @@ class _BookshelfDetailPageState extends State<BookshelfDetailPage> {
                                   Expanded(
                                     child: Container(
                                       height: 50,
-                                      decoration: BoxDecoration(
+                                      decoration: const BoxDecoration(
                                         color: Colors.orange,
-                                        borderRadius: const BorderRadius.only(
+                                        borderRadius: BorderRadius.only(
                                           topRight: Radius.circular(12),
                                           bottomRight: Radius.circular(12),
                                         ),
@@ -700,18 +700,18 @@ class _BookshelfDetailPageState extends State<BookshelfDetailPage> {
                                           onTap: () {
                                             _showRatingDialog(detail!);
                                           },
-                                          child: Center(
+                                          child: const Center(
                                             child: Row(
                                               mainAxisAlignment:
                                                   MainAxisAlignment.center,
                                               children: [
-                                                const Icon(
+                                                Icon(
                                                   Icons.star,
                                                   color: Colors.white,
                                                   size: 18,
                                                 ),
-                                                const SizedBox(width: 6),
-                                                const Text(
+                                                SizedBox(width: 6),
+                                                Text(
                                                   'Rating/Ulasan',
                                                   style: TextStyle(
                                                     color: Colors.white,

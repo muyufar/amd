@@ -22,7 +22,7 @@ class _PrivacyContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SelectableText(
+    return const SelectableText(
       '''Privacy Policy Ebook AMD
 Last Updated: 24 October 2025
 

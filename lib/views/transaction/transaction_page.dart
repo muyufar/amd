@@ -291,7 +291,7 @@ class _TransactionList extends StatelessWidget {
                 ),
               ),
             );
-          }).toList(),
+          }),
         ],
       ),
     );
@@ -417,13 +417,13 @@ class _TransactionList extends StatelessWidget {
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 8, vertical: 4),
                               decoration: BoxDecoration(
-                                color: trx.barang.length > 1
+                                color: trx.jumlahBarang > 1
                                     ? Colors.orange
                                     : Colors.blue,
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: Text(
-                                trx.barang.length > 1 ? 'Keranjang' : 'Direct',
+                                trx.jumlahBarang > 1 ? 'Keranjang' : 'Direct',
                                 style: const TextStyle(
                                   color: Colors.white,
                                   fontSize: 12,
@@ -441,15 +441,24 @@ class _TransactionList extends StatelessWidget {
                         ),
                         const SizedBox(height: 8),
 
-                        // Tampilan berbeda untuk single vs multiple items
-                        if (trx.barang.length == 1)
-                          // Single item - tampilan compact
+                        // Tampilan item (barang sekarang adalah object, bukan list)
+                        if (trx.barang != null)
+                          // Single item - tampilan compact (hanya 1 barang ditampilkan di list)
                           _buildSingleItemView(
-                              trx.barang.first, enableTapToCheckout, trx)
+                              trx.barang!, enableTapToCheckout, trx)
                         else
-                          // Multiple items - tampilan expanded
-                          _buildMultipleItemsView(
-                              trx.barang, enableTapToCheckout, trx),
+                          // Fallback jika barang null
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.grey[100],
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Text(
+                              'Item tidak tersedia',
+                              style: TextStyle(color: Colors.grey),
+                            ),
+                          ),
 
                         const SizedBox(height: 8),
 
@@ -468,12 +477,12 @@ class _TransactionList extends StatelessWidget {
                                     MainAxisAlignment.spaceBetween,
                                 children: [
                                   Text(
-                                    'Jumlah Item: ${trx.barang.length}',
+                                    'Jumlah Item: ${trx.jumlahBarang}',
                                     style: const TextStyle(
                                         fontSize: 14, color: Colors.grey),
                                   ),
                                   Text(
-                                    trx.jumlahBarang,
+                                    '${trx.jumlahBarang} barang',
                                     style: const TextStyle(
                                         fontSize: 14, color: Colors.grey),
                                   ),
@@ -512,11 +521,11 @@ class _TransactionList extends StatelessWidget {
               top: 0,
               left: 0,
               right: 0,
-              child: Container(
+              child: SizedBox(
                 height: 4,
                 child: LinearProgressIndicator(
                   backgroundColor: Colors.grey[300],
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
+                  valueColor: const AlwaysStoppedAnimation<Color>(Colors.blue),
                 ),
               ),
             ),
@@ -545,8 +554,8 @@ class _TransactionBookItem extends StatelessWidget {
   final TransactionItemModel item;
   final bool enableTapToCheckout;
   final TransactionHistoryModel transaction;
-  const _TransactionBookItem(this.item, this.transaction,
-      {this.enableTapToCheckout = false});
+  const _TransactionBookItem(
+      this.item, this.transaction, this.enableTapToCheckout);
 
   @override
   Widget build(BuildContext context) {

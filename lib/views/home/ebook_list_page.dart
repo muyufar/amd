@@ -165,7 +165,8 @@ class _EbookListPageState extends State<EbookListPage> {
                 crossAxisCount: 2,
                 mainAxisSpacing: 16,
                 crossAxisSpacing: 16,
-                childAspectRatio: 0.62,
+                childAspectRatio:
+                    0.58, // Adjusted untuk mengakomodasi konten lebih banyak
               ),
               itemCount: list.length + (hasMore && isLoadingMore ? 1 : 0),
               itemBuilder: (context, index) {
@@ -231,7 +232,10 @@ class _BookCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: 160,
-      height: 280, // Fixed height to prevent overflow
+      constraints: const BoxConstraints(
+        minHeight: 300,
+        maxHeight: 320,
+      ),
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -253,13 +257,14 @@ class _BookCard extends StatelessWidget {
         borderRadius: borderRadiusTheme,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
             // Cover Image full width
             ClipRRect(
               borderRadius:
                   const BorderRadius.vertical(top: Radius.circular(14)),
               child: SizedBox(
-                height: 180, // Fixed height untuk cover
+                height: 170, // Reduced height untuk memberi ruang lebih
                 width: double.infinity,
                 child: Image.network(
                   buku['gambar1'] ?? '',
@@ -272,13 +277,15 @@ class _BookCard extends StatelessWidget {
               ),
             ),
             // Book details
-            Expanded(
+            Flexible(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(8, 8, 8, 8),
+                padding: const EdgeInsets.fromLTRB(8, 6, 8, 8),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
+                    const SizedBox(height: 2),
+                    // Author
                     Text(
                       buku['penulis'] ?? '-',
                       maxLines: 1,
@@ -289,26 +296,24 @@ class _BookCard extends StatelessWidget {
                         height: 1.2,
                       ),
                     ),
+                    const SizedBox(height: 4),
                     // Book title
-                    Text(
-                      buku['judul'] ?? '-',
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w400,
-                        fontSize: 14,
-                        height: 1.2,
+                    Flexible(
+                      child: Text(
+                        buku['judul'] ?? '-',
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w400,
+                          fontSize: 13,
+                          height: 1.2,
+                        ),
                       ),
                     ),
-
-                    // Price
-                    Text(
-                      'Rp ${buku['harga'] ?? '-'}',
-                      style: textTheme.bodyMedium?.copyWith(
-                        color: colorBlack,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                      ),
+                    const SizedBox(height: 6),
+                    // Price - menggunakan Flexible untuk mencegah overflow
+                    Flexible(
+                      child: _buildPrice(buku),
                     ),
                   ],
                 ),
@@ -318,6 +323,36 @@ class _BookCard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Widget _buildPrice(Map<String, dynamic> buku) {
+    final harga = buku['harga'] ?? 0;
+    final diskon = buku['diskon'] ?? 0;
+    final diskonPrice = buku['diskon_price'] ?? 0;
+
+    // Tampilkan harga diskon jika ada, jika tidak tampilkan harga asli
+    final displayPrice = (diskon > 0 && diskonPrice > 0) ? diskonPrice : harga;
+
+    return Text(
+      'Rp ${_formatPrice(displayPrice)}',
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: textTheme.bodyMedium?.copyWith(
+        color: colorBlack,
+        fontWeight: FontWeight.bold,
+        fontSize: 13,
+      ),
+    );
+  }
+
+  String _formatPrice(dynamic price) {
+    if (price is num) {
+      return price.toStringAsFixed(0).replaceAllMapped(
+            RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+            (Match m) => '${m[1]}.',
+          );
+    }
+    return price.toString();
   }
 }
 
@@ -370,14 +405,7 @@ class _BookListTile extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SizedBox(height: 4),
-            Text(
-              'Rp ${buku['harga'] ?? '-'}',
-              style: textTheme.bodyMedium?.copyWith(
-                color: colorBlack,
-                fontWeight: FontWeight.bold,
-                fontSize: 14,
-              ),
-            ),
+            _buildPrice(buku),
           ],
         ),
         onTap: () {
@@ -386,5 +414,33 @@ class _BookListTile extends StatelessWidget {
         },
       ),
     );
+  }
+
+  Widget _buildPrice(Map<String, dynamic> buku) {
+    final harga = buku['harga'] ?? 0;
+    final diskon = buku['diskon'] ?? 0;
+    final diskonPrice = buku['diskon_price'] ?? 0;
+
+    // Tampilkan harga diskon jika ada, jika tidak tampilkan harga asli
+    final displayPrice = (diskon > 0 && diskonPrice > 0) ? diskonPrice : harga;
+
+    return Text(
+      'Rp ${_formatPrice(displayPrice)}',
+      style: textTheme.bodyMedium?.copyWith(
+        color: colorBlack,
+        fontWeight: FontWeight.bold,
+        fontSize: 14,
+      ),
+    );
+  }
+
+  String _formatPrice(dynamic price) {
+    if (price is num) {
+      return price.toStringAsFixed(0).replaceAllMapped(
+            RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+            (Match m) => '${m[1]}.',
+          );
+    }
+    return price.toString();
   }
 }

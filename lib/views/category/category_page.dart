@@ -4,7 +4,7 @@ import '../../controllers/category_controller.dart';
 import 'category_books_page.dart';
 
 class CategoryPage extends StatefulWidget {
-  CategoryPage({super.key});
+  const CategoryPage({super.key});
 
   @override
   State<CategoryPage> createState() => _CategoryPageState();
@@ -718,7 +718,7 @@ class _CategoryPageState extends State<CategoryPage> {
                 return LinearProgressIndicator(
                   value: value,
                   backgroundColor: Colors.green[100],
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.green),
+                  valueColor: const AlwaysStoppedAnimation<Color>(Colors.green),
                   minHeight: 4,
                 );
               },
@@ -847,7 +847,7 @@ class _CategoryPageState extends State<CategoryPage> {
                 return LinearProgressIndicator(
                   value: value,
                   backgroundColor: Colors.blue[100],
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
+                  valueColor: const AlwaysStoppedAnimation<Color>(Colors.blue),
                   minHeight: 3,
                 );
               },
@@ -996,7 +996,7 @@ class _CategoryPageState extends State<CategoryPage> {
                 return LinearProgressIndicator(
                   value: value,
                   backgroundColor: Colors.blue[100],
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
+                  valueColor: const AlwaysStoppedAnimation<Color>(Colors.blue),
                   minHeight: 4,
                 );
               },

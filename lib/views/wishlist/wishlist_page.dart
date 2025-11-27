@@ -42,13 +42,13 @@ class _WishlistPageState extends State<WishlistPage> {
         } else if (controller.error.value.isNotEmpty) {
           return Center(child: Text(controller.error.value));
         } else if (controller.wishlist.isEmpty) {
-          return Center(
+          return const Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.favorite_border, size: 72, color: Colors.grey),
-                const SizedBox(height: 16),
-                const Text('Whsilist Belum ada silahkan cari Buku',
+                Icon(Icons.favorite_border, size: 72, color: Colors.grey),
+                SizedBox(height: 16),
+                Text('Whsilist Belum ada silahkan cari Buku',
                     style: TextStyle(fontSize: 16, color: Colors.grey)),
               ],
             ),
@@ -69,9 +69,6 @@ class _WishlistPageState extends State<WishlistPage> {
               itemCount: controller.wishlist.length,
               itemBuilder: (context, index) {
                 final raw = controller.wishlist[index];
-                if (raw is! Map<String, dynamic>) {
-                  return const SizedBox.shrink();
-                }
                 final item = raw;
                 final harga =
                     int.tryParse((item['harga'] ?? '0').toString()) ?? 0;
@@ -180,9 +177,6 @@ class _WishlistPageState extends State<WishlistPage> {
               separatorBuilder: (_, __) => const SizedBox(height: 12),
               itemBuilder: (context, index) {
                 final raw = controller.wishlist[index];
-                if (raw is! Map<String, dynamic>) {
-                  return const SizedBox.shrink();
-                }
                 final item = raw;
                 final harga =
                     int.tryParse((item['harga'] ?? '0').toString()) ?? 0;

@@ -30,13 +30,13 @@ class _BecomeAuthorContent extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
+        const Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Expanded(
               child: SelectableText(
                 'Untuk yang berminat menjadi penulis ebook dapat menghubungi narahubung kami di $phoneNumber',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 16,
                   height: 1.6,
                 ),
@@ -49,7 +49,7 @@ class _BecomeAuthorContent extends StatelessWidget {
           width: double.infinity,
           child: ElevatedButton.icon(
             onPressed: () async {
-              final String message =
+              const String message =
                   'Hai eBook AMD! Saya berminat menjadi penulis ebook';
               final Uri waUri = Uri.parse(
                   'https://wa.me/$phoneNumberForWhatsApp?text=${Uri.encodeComponent(message)}');

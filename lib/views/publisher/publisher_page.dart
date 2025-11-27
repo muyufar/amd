@@ -178,7 +178,7 @@ class _PublisherPageState extends State<PublisherPage> {
                         borderRadius: BorderRadius.circular(25),
                       ),
                       child:
-                          Icon(Icons.business, color: Colors.purple, size: 24),
+                          const Icon(Icons.business, color: Colors.purple, size: 24),
                     ),
                     const SizedBox(width: 16),
                     Expanded(
@@ -263,7 +263,7 @@ class _PublisherPageState extends State<PublisherPage> {
                 decoration: BoxDecoration(
                     color: Colors.purple.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(20)),
-                child: Icon(Icons.label, color: Colors.purple, size: 20),
+                child: const Icon(Icons.label, color: Colors.purple, size: 20),
               ),
               const SizedBox(width: 12),
               Expanded(

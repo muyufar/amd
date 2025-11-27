@@ -8,12 +8,11 @@ import '../models/book_model.dart';
 class BookService {
   final box = GetStorage();
 
-  Future<List<Map<String, dynamic>>> fetchBukuTerbaru({
-    int limit = 10,
-    int offset = 0,
+  Future<Map<String, dynamic>> fetchBukuTerbaru({
+    int page = 1,
   }) async {
     final url = Uri.parse(
-      '${AppConfig.baseUrlApp}/ebook/list?tag=terbaru&limit=$limit&offset=$offset',
+      '${AppConfig.baseUrlApp}/ebook/list?tag=terbaru&page=$page',
     );
 
     print('🔵 [BOOK SERVICE] Fetching buku terbaru from: $url');
@@ -30,9 +29,53 @@ class BookService {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        return data['data'] != null && data['data']['value'] != null
-            ? List<Map<String, dynamic>>.from(data['data']['value'])
-            : [];
+        if (data['status'] == true && data['data'] != null) {
+          // New API format: data is directly an array
+          final bookList = data['data'];
+          
+          // Check if data is an array (new format) or object with pagination (old format)
+          if (bookList is List) {
+            // New format: data is directly an array
+            final books = List<Map<String, dynamic>>.from(bookList);
+            // Assume no more pages if returned list is empty or less than expected
+            // You can adjust this logic based on your API's behavior
+            final hasMore = books.isNotEmpty && books.length >= 20; // Adjust threshold as needed
+            
+            return {
+              'data': books,
+              'current_page': page,
+              'last_page': hasMore ? page + 1 : page,
+              'next_page_url': hasMore ? 'page=${page + 1}' : null,
+              'has_more': hasMore,
+            };
+          } else if (bookList is Map<String, dynamic>) {
+            // Old format: data contains pagination info
+            final paginationData = bookList;
+            return {
+              'data': List<Map<String, dynamic>>.from(paginationData['data'] ?? []),
+              'current_page': paginationData['current_page'] ?? page,
+              'last_page': paginationData['last_page'] ?? page,
+              'next_page_url': paginationData['next_page_url'],
+              'has_more': paginationData['next_page_url'] != null,
+            };
+          } else {
+            return {
+              'data': [],
+              'current_page': page,
+              'last_page': page,
+              'next_page_url': null,
+              'has_more': false,
+            };
+          }
+        } else {
+          return {
+            'data': [],
+            'current_page': page,
+            'last_page': page,
+            'next_page_url': null,
+            'has_more': false,
+          };
+        }
       } else {
         throw Exception(
             'Failed to fetch buku terbaru: ${response.statusCode} - ${response.body}');
@@ -43,10 +86,11 @@ class BookService {
     }
   }
 
-  Future<List<dynamic>> fetchBukuTerlaris(
-      {int limit = 10, int offset = 0}) async {
+  Future<Map<String, dynamic>> fetchBukuTerlaris({
+    int page = 1,
+  }) async {
     final url = Uri.parse(
-        '${AppConfig.baseUrlApp}/ebook/list?tag=terlaris&limit=$limit&offset=$offset');
+        '${AppConfig.baseUrlApp}/ebook/list?tag=terlaris&page=$page');
 
     print('🔵 [BOOK SERVICE] Fetching buku terlaris from: $url');
 
@@ -62,9 +106,53 @@ class BookService {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        return data['data'] != null && data['data']['value'] != null
-            ? List<Map<String, dynamic>>.from(data['data']['value'])
-            : [];
+        if (data['status'] == true && data['data'] != null) {
+          // New API format: data is directly an array
+          final bookList = data['data'];
+          
+          // Check if data is an array (new format) or object with pagination (old format)
+          if (bookList is List) {
+            // New format: data is directly an array
+            final books = List<Map<String, dynamic>>.from(bookList);
+            // Assume no more pages if returned list is empty or less than expected
+            // You can adjust this logic based on your API's behavior
+            final hasMore = books.isNotEmpty && books.length >= 20; // Adjust threshold as needed
+            
+            return {
+              'data': books,
+              'current_page': page,
+              'last_page': hasMore ? page + 1 : page,
+              'next_page_url': hasMore ? 'page=${page + 1}' : null,
+              'has_more': hasMore,
+            };
+          } else if (bookList is Map<String, dynamic>) {
+            // Old format: data contains pagination info
+            final paginationData = bookList;
+            return {
+              'data': List<Map<String, dynamic>>.from(paginationData['data'] ?? []),
+              'current_page': paginationData['current_page'] ?? page,
+              'last_page': paginationData['last_page'] ?? page,
+              'next_page_url': paginationData['next_page_url'],
+              'has_more': paginationData['next_page_url'] != null,
+            };
+          } else {
+            return {
+              'data': [],
+              'current_page': page,
+              'last_page': page,
+              'next_page_url': null,
+              'has_more': false,
+            };
+          }
+        } else {
+          return {
+            'data': [],
+            'current_page': page,
+            'last_page': page,
+            'next_page_url': null,
+            'has_more': false,
+          };
+        }
       } else {
         throw Exception(
             'Failed to fetch buku terlaris: ${response.statusCode} - ${response.body}');

@@ -529,17 +529,17 @@ class BookDetailPage extends StatelessWidget {
                 );
               }
             },
-            child: Center(
+            child: const Center(
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.menu_book,
                     color: Colors.white,
                     size: 18,
                   ),
-                  const SizedBox(width: 6),
-                  const Text(
+                  SizedBox(width: 6),
+                  Text(
                     'Baca Buku',
                     style: TextStyle(
                       color: Colors.white,
@@ -577,9 +577,9 @@ class BookDetailPage extends StatelessWidget {
           Container(
             width: 50,
             height: 50,
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               color: Colors.teal,
-              borderRadius: const BorderRadius.only(
+              borderRadius: BorderRadius.only(
                 topLeft: Radius.circular(12),
                 bottomLeft: Radius.circular(12),
               ),
@@ -669,7 +669,7 @@ class BookDetailPage extends StatelessWidget {
           Container(
             width: 50,
             height: 50,
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               color: Colors.teal,
             ),
             child: IconButton(
@@ -709,9 +709,9 @@ class BookDetailPage extends StatelessWidget {
           Expanded(
             child: Container(
               height: 50,
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 color: Colors.orange,
-                borderRadius: const BorderRadius.only(
+                borderRadius: BorderRadius.only(
                   topRight: Radius.circular(12),
                   bottomRight: Radius.circular(12),
                 ),
